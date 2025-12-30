@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>行政查核 - 極客魂社團線上表單系統</title>
+  <script src="../scripts/TailwindCSS.js"></script>
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+  <!-- ========== Header ========== -->
+  <header>
+    <div class="header-content">
+      <h1>《極客魂社團》線上表單系統</h1>
+      <p>社團活動報名、名額管理與行政支援系統</p>
+    </div>
+  </header>
+
+  <!-- ========== Navigation ========== -->
+  <nav>
+    <a href="overview.html">系統概覽</a>
+    <a href="staff-panel.html">幹部管理</a>
+    <a href="admin.html">行政查核</a>
+  </nav>
+
+  <!-- ========== Main Content ========== -->
+  <main>
+    <!-- 行政查核 Section -->
+    <div class="card">
+      <h2>行政查核介面（系秘書用）</h2>
+      <p style="margin-bottom: 1.5rem; color: var(--color-text-secondary);">
+        此介面提供系辦公室進行活動資料審核、人數統計與成果彙整。資料為唯讀模式。
+      </p>
+
+      <h3>活動篩選</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 600px; margin-bottom: 2rem;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label>選擇活動</label>
+          <select>
+            <option>-- 全部活動 --</option>
+            <option>極客魂新生入門講座</option>
+            <option>Python 工作坊</option>
+            <option>Web 開發進階班</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+          <label>日期範圍</label>
+          <input type="date">
+        </div>
+      </div>
+
+      <h3>活動統計</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>活動名稱</th>
+            <th>舉辦日期</th>
+            <th>報名人數</th>
+            <th>名額上限</th>
+            <th>狀態</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>極客魂新生入門講座</td>
+            <td>2025-01-15</td>
+            <td>40</td>
+            <td>50</td>
+            <td><span class="badge success">進行中</span></td>
+          </tr>
+          <tr>
+            <td>Python 工作坊</td>
+            <td>2025-01-22</td>
+            <td>38</td>
+            <td>40</td>
+            <td><span class="badge success">進行中</span></td>
+          </tr>
+          <tr>
+            <td>Web 開發進階班</td>
+            <td>2025-02-05</td>
+            <td>40</td>
+            <td>40</td>
+            <td><span class="badge warning">已額滿</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin-top: 2rem;">報名名單詳情</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>序號</th>
+            <th>姓名</th>
+            <th>學號</th>
+            <th>系所</th>
+            <th>報名時間</th>
+            <th>報名狀態</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>001</td>
+            <td>王小明</td>
+            <td>1101001</td>
+            <td>資訊工程系</td>
+            <td>2025-01-10 14:32</td>
+            <td><span class="badge success">成功</span></td>
+          </tr>
+          <tr>
+            <td>002</td>
+            <td>李小芳</td>
+            <td>1102045</td>
+            <td>資料科學系</td>
+            <td>2025-01-10 15:18</td>
+            <td><span class="badge success">成功</span></td>
+          </tr>
+          <tr>
+            <td>003</td>
+            <td>張子軒</td>
+            <td>1101078</td>
+            <td>資訊管理系</td>
+            <td>2025-01-10 16:05</td>
+            <td><span class="badge error">額滿</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top: 1.5rem;">
+        <button class="btn btn-primary">匯出 CSV</button>
+        <button class="btn btn-secondary" style="margin-left: 0.5rem;">列印</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="../scripts/main.js"></script>
+</body>
+</html>

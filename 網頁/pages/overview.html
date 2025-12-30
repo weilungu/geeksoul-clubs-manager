@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系統概覽 - 極客魂社團線上表單系統</title>
+  <script src="../scripts/TailwindCSS.js"></script>
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+  <!-- ========== Header ========== -->
+  <header>
+    <div class="header-content">
+      <h1>《極客魂社團》線上表單系統</h1>
+      <p>社團活動報名、名額管理與行政支援系統</p>
+    </div>
+  </header>
+
+  <!-- ========== Navigation ========== -->
+  <nav>
+    <a href="overview.html">系統概覽</a>
+    <a href="staff-panel.html">幹部管理</a>
+    <a href="admin.html">行政查核</a>
+  </nav>
+
+  <!-- ========== Main Content ========== -->
+  <main>
+    <!-- 系統概覽 Section -->
+    <div class="card">
+      <h2>歡迎使用《極客魂社團》線上表單系統</h2>
+      <p style="margin-bottom: 1.5rem; color: var(--color-text-secondary);">
+        本系統旨在簡化社團活動報名流程，降低幹部行政負擔，提供完整的活動管理與行政查核功能。
+      </p>
+
+      <h3>核心功能</h3>
+      <div class="grid">
+        <div style="padding: 1.5rem; background-color: var(--color-bg); border-radius: 8px;">
+          <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">📋 活動管理</h4>
+          <p style="font-size: 0.95rem; color: var(--color-text-secondary);">
+            社團幹部可建立、編輯與管理活動報名資訊，控制報名狀態與名額。
+          </p>
+        </div>
+
+        <div style="padding: 1.5rem; background-color: var(--color-bg); border-radius: 8px;">
+          <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">📝 線上報名</h4>
+          <p style="font-size: 0.95rem; color: var(--color-text-secondary);">
+            社員與非社員可快速報名活動，系統自動判定名額並發送通知信。
+          </p>
+        </div>
+
+        <div style="padding: 1.5rem; background-color: var(--color-bg); border-radius: 8px;">
+          <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">⚙️ 自動化判定</h4>
+          <p style="font-size: 0.95rem; color: var(--color-text-secondary);">
+            無需人工審核，系統自動根據名額判定報名是否成功。
+          </p>
+        </div>
+
+        <div style="padding: 1.5rem; background-color: var(--color-bg); border-radius: 8px;">
+          <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">📧 結果通知</h4>
+          <p style="font-size: 0.95rem; color: var(--color-text-secondary);">
+            報名後自動寄送結果通知信，使用者立即得知報名狀況。
+          </p>
+        </div>
+
+        <div style="padding: 1.5rem; background-color: var(--color-bg); border-radius: 8px;">
+          <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">👥 名單管理</h4>
+          <p style="font-size: 0.95rem; color: var(--color-text-secondary);">
+            完整的報名名單供幹部查詢，支援行政人員查核與資料留存。
+          </p>
+        </div>
+
+        <div style="padding: 1.5rem; background-color: var(--color-bg); border-radius: 8px;">
+          <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">🔒 權限管理</h4>
+          <p style="font-size: 0.95rem; color: var(--color-text-secondary);">
+            根據使用者角色，提供不同等級的功能與資料存取權限。
+          </p>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 2rem;">使用者角色</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>角色</th>
+            <th>主要功能</th>
+            <th>使用裝置</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>社團幹部</strong></td>
+            <td>活動建立、名額控管、名單檢視與匯出</td>
+            <td>筆電（主要）</td>
+          </tr>
+          <tr>
+            <td><strong>社員／非社員</strong></td>
+            <td>活動報名、報名結果確認</td>
+            <td>手機（主要）、筆電（輔助）</td>
+          </tr>
+          <tr>
+            <td><strong>系秘書</strong></td>
+            <td>名單檢視、行政資料查核</td>
+            <td>桌機</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="../scripts/main.js"></script>
+</body>
+</html>
