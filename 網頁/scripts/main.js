@@ -12,32 +12,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // ========== Modal Form Management ==========
+  // ========== 報名表單 Modal Management ==========
   const modal = document.getElementById('registrationModal');
-  const modalClose = document.querySelector('.modal-close');
+  const modalClose = document.querySelector('#registrationModal .modal-close');
   const cancelBtn = document.getElementById('cancelBtn');
   const submitBtn = document.getElementById('submitBtn');
-  const registrationButtons = document.querySelectorAll('.activity-item .btn-primary');
   const modalActivityTitle = document.getElementById('modalActivityTitle');
+  const modalPoster = document.getElementById('modalPoster');
+  const activityCards = document.querySelectorAll('.activity-item.clickable');
 
   // Store current activity info
   let currentActivity = null;
 
-  // Open modal when clicking "我要報名" button
-  registrationButtons.forEach((btn) => {
-    btn.addEventListener('click', function(e) {
+  // Open registration modal when clicking on available activity card
+  activityCards.forEach((card) => {
+    card.addEventListener('click', function(e) {
       e.preventDefault();
       
-      // Get activity information from the card
-      const activityItem = this.closest('.activity-item');
-      const activityTitle = activityItem.querySelector('.activity-content h3').textContent;
-      
+      const isAvailable = this.dataset.available === 'true';
+      if (!isAvailable) return; // 已額滿的活動不顯示 Modal
+
+      // Get activity information from data attributes
       currentActivity = {
-        title: activityTitle
+        title: this.dataset.title,
+        poster: this.dataset.poster || null
       };
 
-      // Update modal title
-      modalActivityTitle.textContent = `報名：${activityTitle}`;
+      // Update registration modal title
+      modalActivityTitle.textContent = `報名：${currentActivity.title}`;
+
+      // Update poster
+      if (currentActivity.poster) {
+        modalPoster.innerHTML = `<img src="${currentActivity.poster}" alt="${currentActivity.title} 海報">`;
+      } else {
+        // 從卡片取得漸層背景色
+        const cardImage = this.querySelector('.activity-image');
+        const bgStyle = cardImage ? cardImage.style.background : 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))';
+        modalPoster.innerHTML = `<div class="poster-placeholder" style="background: ${bgStyle};"><span>🖼️ ${currentActivity.title}</span></div>`;
+      }
 
       // Clear form fields
       document.getElementById('department').value = '';
@@ -46,46 +58,90 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('email').value = '';
       document.getElementById('agreement').checked = false;
 
-      // Show modal
-      modal.classList.add('active');
+      // Lock background scroll
+      document.body.classList.add('modal-open');
+
+      // Show registration modal with jQuery fade-in effect
+      openModalWithFade(modal);
     });
   });
 
-  // Close modal functions
+  // Close registration modal functions with jQuery fade-out effect
   function closeModal() {
-    modal.classList.remove('active');
+    closeModalWithFade(modal, function() {
+      document.body.classList.remove('modal-open');
+    });
   }
 
-  modalClose.addEventListener('click', closeModal);
-  cancelBtn.addEventListener('click', closeModal);
+  if (modalClose) modalClose.addEventListener('click', closeModal);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
-  // Close modal when clicking outside of modal-content
-  modal.addEventListener('click', function(e) {
-    if (e.target === modal) {
-      closeModal();
+  // ========== 表單驗證 ==========
+  const departmentInput = document.getElementById('department');
+  const nameInput = document.getElementById('name');
+  const studentIdInput = document.getElementById('studentId');
+  const emailInput = document.getElementById('email');
+  const agreementCheckbox = document.getElementById('agreement');
+
+  // 設定自訂驗證訊息
+  departmentInput.addEventListener('invalid', function() {
+    if (!this.value.trim()) {
+      this.setCustomValidity('請填寫系所');
     }
+  });
+  departmentInput.addEventListener('input', function() {
+    this.setCustomValidity('');
+  });
+
+  nameInput.addEventListener('invalid', function() {
+    if (!this.value.trim()) {
+      this.setCustomValidity('請填寫姓名');
+    }
+  });
+  nameInput.addEventListener('input', function() {
+    this.setCustomValidity('');
+  });
+
+  studentIdInput.addEventListener('invalid', function() {
+    if (!this.value.trim()) {
+      this.setCustomValidity('請填寫學號');
+    }
+  });
+  studentIdInput.addEventListener('input', function() {
+    this.setCustomValidity('');
+  });
+
+  emailInput.addEventListener('invalid', function() {
+    if (!this.value.trim()) {
+      this.setCustomValidity('請填寫 Email 帳號');
+    } else {
+      this.setCustomValidity('請輸入有效的 Email 格式');
+    }
+  });
+  emailInput.addEventListener('input', function() {
+    this.setCustomValidity('');
+  });
+
+  agreementCheckbox.addEventListener('invalid', function() {
+    this.setCustomValidity('請勾選同意提供資料');
+  });
+  agreementCheckbox.addEventListener('change', function() {
+    this.setCustomValidity('');
   });
 
   // Submit form
   submitBtn.addEventListener('click', function() {
-    const department = document.getElementById('department').value.trim();
-    const name = document.getElementById('name').value.trim();
-    const studentId = document.getElementById('studentId').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const agreement = document.getElementById('agreement').checked;
-
-    // Validation
-    if (!department || !name || !studentId || !email || !agreement) {
-      alert('請填寫所有必填欄位並同意相關條款');
-      return;
+    // 檢查所有欄位是否有效
+    const inputs = [departmentInput, nameInput, studentIdInput, emailInput, agreementCheckbox];
+    for (const input of inputs) {
+      if (!input.checkValidity()) {
+        input.reportValidity();
+        return;
+      }
     }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      alert('請輸入有效的 Email 帳號');
-      return;
-    }
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
 
     // Success message
     alert(`感謝報名！\n\n活動：${currentActivity.title}\n姓名：${name}\nGmail：${email}\n\n系統已寄送確認信至您的 Gmail。`);

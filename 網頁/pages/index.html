@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>活動報名 - 極客魂社團線上表單系統</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="../scripts/TailwindCSS.js"></script>
   <link rel="stylesheet" href="../styles/main.css">
 </head>
@@ -30,8 +31,24 @@
 
         <h3>近期活動</h3>
         <div class="grid">
+          <!-- 
+            活動卡片說明：
+            - data-poster: 海報圖片網址（可使用 Google Drive 分享連結）
+              Google Drive 海報網址格式：https://drive.google.com/uc?id=你的檔案ID
+              例如：data-poster="https://drive.google.com/uc?id=1ABC123xyz"
+          -->
+          
           <!-- 活動卡片 1 -->
-          <div class="activity-item">
+           <!-- https://drive.google.com/file/d/1Q3WMjdgau9bg9WJv7KutwhRtOXvZ6C-t/view?usp=drive_link -->
+          <div class="activity-item clickable" 
+              data-available="true" 
+              data-title="極客魂新生入門講座" 
+              data-date="2025年1月15日 19:00 - 21:00" 
+              data-location="資訊大樓 101 教室" 
+              data-speaker="技術長 David" 
+              data-quota="35" 
+              data-poster="https://drive.google.com/thumbnail?id=1Q3WMjdgau9bg9WJv7KutwhRtOXvZ6C-t&sz=w1000">
+            <!-- data-poster="" 請填入海報的 Google Drive 網址 -->
             <div class="activity-image" style="background: linear-gradient(135deg, #B71C1C, #F57C00);"></div>
             <div class="activity-content">
               <h3>極客魂新生入門講座</h3>
@@ -43,12 +60,12 @@
               <div class="quota-info available">
                 還有 <strong>35 個名額</strong> 可報名
               </div>
-              <button class="btn btn-primary" style="width: 100%;">我要報名</button>
             </div>
           </div>
 
           <!-- 活動卡片 2 -->
-          <div class="activity-item">
+          <div class="activity-item clickable" data-available="true" data-title="Python 工作坊" data-date="2025年1月22日 19:00 - 21:00" data-location="資訊大樓 201 教室" data-speaker="副社長 Amy" data-quota="12" data-poster="">
+            <!-- data-poster="" 請填入海報的 Google Drive 網址 -->
             <div class="activity-image" style="background: linear-gradient(135deg, #F57C00, #FFB74D);"></div>
             <div class="activity-content">
               <h3>Python 工作坊</h3>
@@ -60,12 +77,12 @@
               <div class="quota-info available">
                 還有 <strong>12 個名額</strong> 可報名
               </div>
-              <button class="btn btn-primary" style="width: 100%;">我要報名</button>
             </div>
           </div>
 
           <!-- 活動卡片 3 -->
-          <div class="activity-item">
+          <div class="activity-item disabled" data-available="false" data-title="Web 開發進階班" data-date="2025年2月5日 19:00 - 21:00" data-location="資訊大樓 301 教室" data-speaker="技術長 David" data-quota="0" data-poster="">
+            <!-- data-poster="" 請填入海報的 Google Drive 網址 -->
             <div class="activity-image" style="background: linear-gradient(135deg, #D32F2F, #B71C1C);"></div>
             <div class="activity-content">
               <h3>Web 開發進階班</h3>
@@ -77,7 +94,6 @@
               <div class="quota-info full">
                 <strong>已額滿</strong>（0 / 40）
               </div>
-              <button class="btn btn-secondary" style="width: 100%;" disabled>已額滿</button>
             </div>
           </div>
         </div>
@@ -101,39 +117,43 @@
   <!-- ========== Modal Form ========== -->
   <div id="registrationModal" class="modal">
     <div class="modal-content">
+      <!-- 海報區域 -->
+      <div class="modal-poster" id="modalPoster">
+        <div class="poster-placeholder">
+          <span>🖼️ 活動海報</span>
+        </div>
+      </div>
       <div class="modal-header">
         <h2 id="modalActivityTitle">社團活動報名</h2>
         <button class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
-        <div style="max-width: 600px;">
           <div class="form-group">
-            <label>系所 *</label>
-            <input type="text" id="department" placeholder="例：資訊工程系">
+            <label>系所 <span class="required">*</span></label>
+            <input type="text" id="department" placeholder="例：資訊工程系" required>
           </div>
 
           <div class="form-group">
-            <label>姓名 *</label>
-            <input type="text" id="name" placeholder="例：王小明">
+            <label>姓名 <span class="required">*</span></label>
+            <input type="text" id="name" placeholder="例：王小明" required>
           </div>
 
           <div class="form-group">
-            <label>學號 *</label>
-            <input type="text" id="studentId" placeholder="例：1101001">
+            <label>學號 <span class="required">*</span></label>
+            <input type="text" id="studentId" placeholder="例：1101001" required>
           </div>
 
           <div class="form-group">
-            <label>Gmail 帳號 *</label>
-            <input type="email" id="email" placeholder="example@gmail.com">
+            <label>常用 Email 帳號 <span class="required">*</span></label>
+            <input type="email" id="email" placeholder="example@gmail.com" required>
           </div>
 
           <div class="form-group">
             <label style="display: flex; align-items: center;">
-              <input type="checkbox" id="agreement" style="width: auto; margin-right: 0.5rem;">
+              <input type="checkbox" id="agreement" style="width: auto; margin-right: 0.5rem;" required>
               我同意提供上述資料用於報名統計與通知用途
             </label>
           </div>
-        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" id="cancelBtn">取消</button>
@@ -143,5 +163,6 @@
   </div>
 
   <script src="../scripts/main.js"></script>
+  <script src="../scripts/jQuery.js"></script>
 </body>
 </html>
