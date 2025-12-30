@@ -261,6 +261,13 @@ main {
   width: 100%;
   height: 200px;
   background-color: var(--color-bg);
+  display: block;
+  overflow: hidden;
+}
+
+.activity-image img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   display: block;
 }

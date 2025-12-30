@@ -12,6 +12,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // ========== 活動卡片圖片自動處理 ==========
+  // 根據 data-poster 和 data-fallback-bg 自動設定卡片圖片
+  const allActivityItems = document.querySelectorAll('.activity-item');
+  allActivityItems.forEach((card) => {
+    const poster = card.dataset.poster;
+    const fallbackBg = card.dataset.fallbackBg;
+    const imageContainer = card.querySelector('.activity-image');
+    const title = card.dataset.title || '活動';
+
+    if (poster && imageContainer) {
+      // 有海報圖片，使用 img 標籤
+      imageContainer.innerHTML = `<img src="${poster}" alt="${title} 海報">`;
+    } else if (fallbackBg && imageContainer) {
+      // 無海報圖片，使用漸層背景
+      imageContainer.style.background = fallbackBg;
+    }
+  });
+
   // ========== 報名表單 Modal Management ==========
   const modal = document.getElementById('registrationModal');
   const modalClose = document.querySelector('#registrationModal .modal-close');
