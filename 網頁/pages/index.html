@@ -30,7 +30,7 @@
         </p>
 
         <h3>近期活動</h3>
-        <div class="grid">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" id="availableActivities">
           <!-- 
             活動卡片說明：
             - data-poster: 海報圖片網址（可使用 Google Drive 分享連結）
@@ -47,8 +47,10 @@
               data-location="資訊大樓 101 教室" 
               data-speaker="技術長 David" 
               data-quota="35" 
+              data-description="歡迎加入極客魂！本講座將帶領新生認識社團運作、活動規劃與未來發展方向，並介紹各項技術學習資源與參與方式。適合所有對程式設計、資訊技術有興趣的同學參加！"
               data-poster="https://drive.google.com/thumbnail?id=1Q3WMjdgau9bg9WJv7KutwhRtOXvZ6C-t&sz=w1000"
-              data-fallback-bg="linear-gradient(135deg, #B71C1C, #F57C00)">
+              data-fallback-bg="linear-gradient(135deg, #B71C1C, #F57C00)"
+              class="activity-item clickable w-full max-w-full mx-auto">
             <div class="activity-image"></div>
             <div class="activity-content">
               <h3>極客魂新生入門講座</h3>
@@ -71,8 +73,10 @@
               data-location="資訊大樓 201 教室" 
               data-speaker="副社長 Amy" 
               data-quota="12" 
+              data-description="從零開始學習 Python 程式設計！本工作坊將涵蓋 Python 基礎語法、資料處理與實作小專案，適合程式初學者或想探索 Python 應用的同學。請攜帶筆電參加！"
               data-poster=""
-              data-fallback-bg="linear-gradient(135deg, #F57C00, #FFB74D)">
+              data-fallback-bg="linear-gradient(135deg, #F57C00, #FFB74D)"
+              class="activity-item clickable w-full max-w-full mx-auto">
             <div class="activity-image"></div>
             <div class="activity-content">
               <h3>Python 工作坊</h3>
@@ -88,15 +92,17 @@
           </div>
 
           <!-- 活動卡片 3 -->
-          <div class="activity-item disabled" 
+          <div class="activity-item clickable" 
               data-available="false" 
               data-title="Web 開發進階班" 
               data-date="2025年2月5日 19:00 - 21:00" 
               data-location="資訊大樓 301 教室" 
               data-speaker="技術長 David" 
               data-quota="0" 
+              data-description="深入學習前端與後端技術！本進階班將介紹 HTML/CSS/JavaScript 進階概念、React 框架入門與 Node.js 後端開發基礎。適合已有程式基礎的同學參加。"
               data-poster=""
-              data-fallback-bg="linear-gradient(135deg, #D32F2F, #B71C1C)">
+              data-fallback-bg="linear-gradient(135deg, #D32F2F, #B71C1C)"
+              class="activity-item clickable w-full max-w-full mx-auto">
             <div class="activity-image"></div>
             <div class="activity-content">
               <h3>Web 開發進階班</h3>
@@ -111,21 +117,11 @@
             </div>
           </div>
         </div>
+
+        <!-- 已額滿活動區塊 -->
+        <h3 id="fullActivitiesTitle" style="display: none; margin-top:5rem;">已額滿活動</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" id="fullActivities"></div>
       </div>
-
-      <div class="card">
-        <h3>報名結果</h3>
-        <div class="alert success" style="display: none;">
-          <strong>✓ 報名成功！</strong><br>
-          感謝您報名「極客魂新生入門講座」，系統已寄送確認信至您的 Gmail。<br>
-          請在活動當日提早 10 分鐘到達現場。
-        </div>
-
-        <div class="alert error" style="display: none;">
-          <strong>✗ 報名失敗</strong><br>
-          很抱歉，該活動已額滿。建議您報名其他場次活動。
-        </div>
-    </div>
   </main>
 
   <!-- ========== Modal Form ========== -->
@@ -138,23 +134,48 @@
         </div>
       </div>
       <div class="modal-header">
-        <h2 id="modalActivityTitle">社團活動報名</h2>
+        <h2 id="modalActivityTitle">社團活動報名</h2> 
         <button class="modal-close">&times;</button>
       </div>
+      
+      <!-- 活動資訊區域（由 JavaScript 動態生成） -->
+      <div class="modal-activity-info" id="modalActivityInfo"></div>
+
       <div class="modal-body">
           <div class="form-group">
-            <label>系所 <span class="required">*</span></label>
-            <input type="text" id="department" placeholder="例：資訊工程系" required>
+            <label>是否為極客魂社員 <span class="required">*</span></label>
+            <p class="form-hint">社員將優先錄取，有在 Line 群組者即為社員。</p>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="isMember" id="memberYes" value="yes" required checked>
+                <span>是</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="isMember" id="memberNo" value="no" required>
+                <span>否（非社員也可以來參加~）</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>系級 <span class="required">*</span></label>
+            <input type="text" id="department" placeholder="例： 資工一A、人工二B" required>
           </div>
 
           <div class="form-group">
             <label>姓名 <span class="required">*</span></label>
-            <input type="text" id="name" placeholder="例：王小明" required>
+            <input type="text" id="name" placeholder="例： 王小明" required>
           </div>
 
           <div class="form-group">
             <label>學號 <span class="required">*</span></label>
-            <input type="text" id="studentId" placeholder="例：1101001" required>
+            <input type="text" id="studentId" placeholder="例： 411345678" required>
+          </div>
+
+          <div class="form-group">
+            <label>Line 暱稱 <span id="lineNameRequired" class="required">*</span></label>
+            <input type="text" id="lineName" placeholder="請輸入您在 Line 群組的暱稱" required>
+            <p class="form-hint" id="lineNameHint">請輸入您在社團 Line 群組中顯示的暱稱</p>
           </div>
 
           <div class="form-group">

@@ -30,6 +30,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // ========== 動態分類活動（可報名 / 已額滿） ==========
+  const availableContainer = document.getElementById('availableActivities');
+  const fullContainer = document.getElementById('fullActivities');
+  const fullActivitiesTitle = document.getElementById('fullActivitiesTitle');
+
+  function categorizeActivities() {
+    const activities = availableContainer.querySelectorAll('.activity-item');
+    let hasFullActivities = false;
+
+    activities.forEach((card) => {
+      const isAvailable = card.dataset.available === 'true';
+      if (!isAvailable) {
+        // 將額滿活動移至「已額滿活動」區塊
+        fullContainer.appendChild(card);
+        hasFullActivities = true;
+      }
+    });
+
+    // 若有額滿活動，顯示標題
+    if (hasFullActivities) {
+      fullActivitiesTitle.style.display = 'block';
+    }
+  }
+
+  // 執行活動分類
+  categorizeActivities();
+
   // ========== 報名表單 Modal Management ==========
   const modal = document.getElementById('registrationModal');
   const modalClose = document.querySelector('#registrationModal .modal-close');
@@ -37,44 +64,107 @@ document.addEventListener('DOMContentLoaded', function() {
   const submitBtn = document.getElementById('submitBtn');
   const modalActivityTitle = document.getElementById('modalActivityTitle');
   const modalPoster = document.getElementById('modalPoster');
+  const modalActivityInfo = document.getElementById('modalActivityInfo');
   const activityCards = document.querySelectorAll('.activity-item.clickable');
+
+  /**
+   * 動態生成活動資訊區塊
+   * @param {Object} activity - 活動資料物件
+   * @param {boolean} isAvailable - 是否還有名額
+   */
+  function renderActivityInfo(activity, isAvailable) {
+    // 定義資訊項目配置
+    const infoItems = [
+      { icon: '📅', label: '活動時間', value: activity.date },
+      { icon: '📍', label: '活動地點', value: activity.location },
+      { icon: '👤', label: '講師', value: activity.speaker },
+      { 
+        icon: '📊', 
+        label: '剩餘名額', 
+        value: isAvailable ? `${activity.quota} 個名額` : '已額滿',
+        style: isAvailable ? '' : 'color: var(--color-error);'
+      }
+    ];
+
+    // 生成 info-item HTML
+    const itemsHTML = infoItems.map(item => `
+      <div class="info-item">
+        <span class="info-icon">${item.icon}</span>
+        <span class="info-label">${item.label}：</span>
+        <span class="info-value"${item.style ? ` style="${item.style}"` : ''}>${item.value}</span>
+      </div>
+    `).join('');
+
+    // 生成描述區塊
+    const descriptionHTML = activity.description 
+      ? `<div class="info-description">${activity.description}</div>` 
+      : '';
+
+    // 組合並渲染
+    modalActivityInfo.innerHTML = itemsHTML + descriptionHTML;
+  }
 
   // Store current activity info
   let currentActivity = null;
 
-  // Open registration modal when clicking on available activity card
+  // Open registration modal when clicking on activity card
   activityCards.forEach((card) => {
     card.addEventListener('click', function(e) {
       e.preventDefault();
       
       const isAvailable = this.dataset.available === 'true';
-      if (!isAvailable) return; // 已額滿的活動不顯示 Modal
 
       // Get activity information from data attributes
       currentActivity = {
         title: this.dataset.title,
-        poster: this.dataset.poster || null
+        date: this.dataset.date,
+        location: this.dataset.location,
+        speaker: this.dataset.speaker,
+        quota: this.dataset.quota,
+        description: this.dataset.description || '',
+        poster: this.dataset.poster || null,
+        fallbackBg: this.dataset.fallbackBg || 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
+        available: isAvailable
       };
 
       // Update registration modal title
-      modalActivityTitle.textContent = `報名：${currentActivity.title}`;
+      modalActivityTitle.textContent = isAvailable ? `報名：${currentActivity.title}` : `活動詳情：${currentActivity.title}`;
+
+      // 動態渲染活動資訊區塊
+      renderActivityInfo(currentActivity, isAvailable);
 
       // Update poster
       if (currentActivity.poster) {
         modalPoster.innerHTML = `<img src="${currentActivity.poster}" alt="${currentActivity.title} 海報">`;
       } else {
-        // 從卡片取得漸層背景色
-        const cardImage = this.querySelector('.activity-image');
-        const bgStyle = cardImage ? cardImage.style.background : 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))';
-        modalPoster.innerHTML = `<div class="poster-placeholder" style="background: ${bgStyle};"><span>🖼️ ${currentActivity.title}</span></div>`;
+        modalPoster.innerHTML = `<div class="poster-placeholder" style="background: ${currentActivity.fallbackBg};"><span>🖼️ ${currentActivity.title}</span></div>`;
       }
 
       // Clear form fields
+      document.getElementById('memberYes').checked = true;
+      document.getElementById('memberNo').checked = false;
       document.getElementById('department').value = '';
       document.getElementById('name').value = '';
       document.getElementById('studentId').value = '';
+      document.getElementById('lineName').value = '';
+      document.getElementById('lineName').disabled = false;
+      document.getElementById('lineName').required = true;
+      document.getElementById('lineNameRequired').style.display = 'inline';
+      document.getElementById('lineNameHint').textContent = '請輸入您在社團 Line 群組中顯示的暱稱';
       document.getElementById('email').value = '';
       document.getElementById('agreement').checked = false;
+
+      // 控制提交按鈕和表單狀態
+      const formInputs = document.querySelectorAll('#registrationModal input');
+      if (isAvailable) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '提交報名';
+        formInputs.forEach(input => input.disabled = false);
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '已額滿，無法報名';
+        formInputs.forEach(input => input.disabled = true);
+      }
 
       // Lock background scroll
       document.body.classList.add('modal-open');
@@ -93,6 +183,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (modalClose) modalClose.addEventListener('click', closeModal);
   if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+  // ========== 社員身份選擇邏輯 ==========
+  const memberYes = document.getElementById('memberYes');
+  const memberNo = document.getElementById('memberNo');
+  const lineNameInput = document.getElementById('lineName');
+  const lineNameRequired = document.getElementById('lineNameRequired');
+  const lineNameHint = document.getElementById('lineNameHint');
+
+  function handleMemberChange() {
+    if (memberYes.checked) {
+      // 社員：啟用 Line 暱稱欄位並設為必填
+      lineNameInput.disabled = false;
+      lineNameInput.required = true;
+      lineNameRequired.style.display = 'inline';
+      lineNameHint.textContent = '請輸入您在社團 Line 群組中顯示的暱稱';
+    } else if (memberNo.checked) {
+      // 非社員：停用 Line 暱稱欄位
+      lineNameInput.disabled = true;
+      lineNameInput.required = false;
+      lineNameInput.value = '';
+      lineNameRequired.style.display = 'none';
+      lineNameHint.textContent = '非社員無需填寫此欄位';
+    }
+  }
+
+  memberYes.addEventListener('change', handleMemberChange);
+  memberNo.addEventListener('change', handleMemberChange);
 
   // ========== 表單驗證 ==========
   const departmentInput = document.getElementById('department');
@@ -123,10 +240,17 @@ document.addEventListener('DOMContentLoaded', function() {
   studentIdInput.addEventListener('invalid', function() {
     if (!this.value.trim()) {
       this.setCustomValidity('請填寫學號');
+    } else {
+      this.setCustomValidity('學號格式錯誤： 需為 4 開頭的 9 位數字');
     }
   });
   studentIdInput.addEventListener('input', function() {
     this.setCustomValidity('');
+    // 驗證學號格式：4開頭，共9位數字
+    const studentIdPattern = /^4\d{8}$/;
+    if (this.value && !studentIdPattern.test(this.value)) {
+      this.setCustomValidity('學號格式錯誤： 需為 4 開頭的 9 位數字');
+    }
   });
 
   emailInput.addEventListener('invalid', function() {

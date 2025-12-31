@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>幹部管理 - 極客魂社團線上表單系統</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="../scripts/TailwindCSS.js"></script>
   <link rel="stylesheet" href="../styles/main.css">
 </head>
@@ -51,7 +52,7 @@
       </div>
 
       <div style="margin-top: 2rem;">
-        <button class="btn btn-primary" style="margin-bottom: 1.5rem;">+ 建立新活動</button>
+        <button class="btn btn-primary" style="margin-bottom: 1.5rem;" onclick="openCreateEventModal()">+ 建立新活動</button>
 
         <h4 style="color: var(--color-text-main); margin-bottom: 1rem;">已建立的活動</h4>
         <table>
@@ -77,50 +78,60 @@
         </table>
       </div>
     </div>
-
-    <div class="card">
-      <h3>新增活動表單</h3>
-      <div style="max-width: 600px;">
-        <div class="form-group">
-          <label>活動名稱 *</label>
-          <input type="text" placeholder="例：2024年秋季 Workshop">
-        </div>
-
-        <div class="form-group">
-          <label>活動時間 *</label>
-          <input type="datetime-local">
-        </div>
-
-        <div class="form-group">
-          <label>活動說明</label>
-          <textarea rows="4" placeholder="詳細說明活動內容、議程、注意事項等..."></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>名額上限 *</label>
-          <input type="number" placeholder="50" min="1">
-        </div>
-
-        <div class="form-group">
-          <label>活動海報圖片網址（Google Drive）</label>
-          <input type="url" placeholder="https://drive.google.com/...">
-        </div>
-
-        <div class="form-group">
-          <label>報名狀態</label>
-          <select>
-            <option>開放報名</option>
-            <option>暫停報名</option>
-            <option>已截止</option>
-          </select>
-        </div>
-
-        <button class="btn btn-success">建立活動</button>
-        <button class="btn btn-secondary" style="margin-left: 0.5rem;">取消</button>
-      </div>
-    </div>
   </main>
 
+  <!-- ========== 新增活動 Modal ========== -->
+  <div id="createEventModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>新增活動表單</h2>
+        <button type="button" class="modal-close">&times;</button>
+      </div>
+      <form id="createEventForm" novalidate>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>活動名稱 <span class="required">*</span></label>
+            <input type="text" id="eventName" placeholder="例：2024年秋季 Workshop" required>
+          </div>
+
+          <div class="form-group">
+            <label>活動時間 <span class="required">*</span></label>
+            <input type="datetime-local" id="eventDate" required>
+          </div>
+
+          <div class="form-group">
+            <label>活動說明</label>
+            <textarea rows="4" id="eventDescription" placeholder="詳細說明活動內容、議程、注意事項等..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>名額上限 <span class="required">*</span></label>
+            <input type="number" id="eventQuota" placeholder="50" min="1" required>
+          </div>
+
+          <div class="form-group">
+            <label>活動海報圖片網址（Google Drive）</label>
+            <input type="url" id="eventPoster" placeholder="https://drive.google.com/...">
+          </div>
+
+          <div class="form-group">
+            <label>報名狀態</label>
+            <select id="eventStatus">
+              <option>開放報名</option>
+              <option>暫停報名</option>
+              <option>已截止</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelCreateEventBtn">取消</button>
+          <button type="submit" class="btn btn-success" id="submitCreateEventBtn">建立活動</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="../scripts/main.js"></script>
+  <script src="../scripts/jQuery.js"></script>
 </body>
 </html>
