@@ -13,6 +13,18 @@ function loadDynamicActivities() {
   // 過濾掉已截止的活動（available 為 false）
   const availableEvents = events.filter(event => event.available !== false);
   
+  // 如果沒有可報名的活動，顯示提示訊息
+  if (availableEvents.length === 0) {
+    availableContainer.innerHTML = `
+      <div class="no-activities-message" style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: var(--color-text-secondary);">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+        <p style="font-size: 1.1rem; font-weight: 500;">目前無活動可報名</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">請稍後再來查看，或關注社團公告！</p>
+      </div>
+    `;
+    return;
+  }
+  
   availableEvents.forEach(event => {
     const activityCard = document.createElement('div');
     activityCard.className = 'activity-item clickable w-full max-w-full mx-auto';
