@@ -16,7 +16,7 @@
       <p>社團活動報名、名額管理與行政支援系統</p>
     </div>
     <div class="header-actions">
-      <a href="staff-panel.html" class="btn-login">幹部登入</a>
+      <a href="login.html" class="btn-login">幹部登入</a>
     </div>
   </header>
 
@@ -59,9 +59,6 @@
                 📍 資訊大樓 101 教室<br>
                 👤 講師：技術長 David
               </div>
-              <div class="quota-info available">
-                還有 <strong>35 個名額</strong> 可報名
-              </div>
             </div>
           </div>
 
@@ -84,9 +81,6 @@
                 📅 2025年1月22日 19:00 - 21:00<br>
                 📍 資訊大樓 201 教室<br>
                 👤 講師：副社長 Amy
-              </div>
-              <div class="quota-info available">
-                還有 <strong>12 個名額</strong> 可報名
               </div>
             </div>
           </div>
@@ -111,16 +105,9 @@
                 📍 資訊大樓 301 教室<br>
                 👤 講師：技術長 David
               </div>
-              <div class="quota-info full">
-                <strong>已額滿</strong>（0 / 40）
-              </div>
             </div>
           </div>
         </div>
-
-        <!-- 已額滿活動區塊 -->
-        <h3 id="fullActivitiesTitle" style="display: none; margin-top:5rem;">已額滿活動</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" id="fullActivities"></div>
       </div>
   </main>
 
@@ -197,7 +184,11 @@
     </div>
   </div>
 
-  <script src="../scripts/main.js"></script>
+  <!-- JavaScript Modules -->
   <script src="../scripts/jQuery.js"></script>
+  <script src="../scripts/utils.js"></script>
+  <script src="../scripts/activities.js"></script>
+  <script src="../scripts/form-validation.js"></script>
+  <script src="../scripts/registration.js"></script>
 </body>
 </html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>幹部登入 - 極客魂社團線上表單系統</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="../scripts/TailwindCSS.js"></script>
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+  <!-- ========== Header ========== -->
+  <header>
+    <div class="header-content">
+      <h1>《極客魂社團》線上表單系統</h1>
+      <p>社團活動報名、名額管理與行政支援系統</p>
+    </div>
+    <div class="header-actions">
+      <a href="index.html" class="btn-login">返回首頁</a>
+    </div>
+  </header>
+
+  <!-- ========== Main Content ========== -->
+  <main>
+    <!-- 登入 Section -->
+    <div class="card">
+      <h2>幹部登入</h2>
+      <p style="margin-bottom: 2rem; color: var(--color-text-secondary);">
+        ⚙️ 本功能需透過幹部帳號登入。登入後可進行活動建立、編輯與名額管理。
+      </p>
+
+      <div style="max-width: 400px; margin: 0 auto;">
+        <div class="form-group">
+          <label>帳號（社團幹部登入）</label>
+          <input type="email" id="loginEmail" placeholder="example@example.com">
+        </div>
+        <div class="form-group">
+          <label>密碼</label>
+          <input type="password" id="loginPassword" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary" id="loginBtn">登入</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 登入按鈕點擊事件
+    document.getElementById('loginBtn').addEventListener('click', function() {
+      // 直接跳轉到幹部管理頁面，不驗證帳號密碼
+      window.location.href = 'staff-panel.html';
+    });
+
+    // 按下 Enter 鍵也可以登入
+    document.getElementById('loginPassword').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        document.getElementById('loginBtn').click();
+      }
+    });
+  </script>
+</body>
+</html>

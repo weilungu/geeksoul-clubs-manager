@@ -33,20 +33,7 @@
         ⚙️ 本功能需透過幹部帳號登入。登入後可進行活動建立、編輯與名額管理。
       </p>
 
-      <h3>登入</h3>
-      <div style="max-width: 400px;">
-        <div class="form-group">
-          <label>帳號（社團幹部登入）</label>
-          <input type="email" placeholder="example@example.com">
-        </div>
-        <div class="form-group">
-          <label>密碼</label>
-          <input type="password" placeholder="••••••••">
-        </div>
-        <button class="btn btn-primary">登入</button>
-      </div>
-
-      <h3 style="margin-top: 3rem;">活動管理面板（登入後顯示）</h3>
+      <h3>活動管理面板</h3>
       <div class="alert info">
         <strong>提示：</strong>登入成功後，此處將顯示所有已建立的活動與管理選項。
       </div>
@@ -91,12 +78,22 @@
         <div class="modal-body">
           <div class="form-group">
             <label>活動名稱 <span class="required">*</span></label>
-            <input type="text" id="eventName" placeholder="例：2024年秋季 Workshop" required>
+            <input type="text" id="eventName" placeholder="例：極客魂新生入門講座" required>
           </div>
 
           <div class="form-group">
-            <label>活動時間 <span class="required">*</span></label>
-            <input type="datetime-local" id="eventDate" required>
+            <label>活動日期時間 <span class="required">*</span></label>
+            <input type="text" id="eventDate" placeholder="例：2025年1月15日 19:00 - 21:00" required>
+          </div>
+
+          <div class="form-group">
+            <label>活動地點 <span class="required">*</span></label>
+            <input type="text" id="eventLocation" placeholder="例：資訊大樓 101 教室" required>
+          </div>
+
+          <div class="form-group">
+            <label>講師 <span class="required">*</span></label>
+            <input type="text" id="eventSpeaker" placeholder="例：技術長 David" required>
           </div>
 
           <div class="form-group">
@@ -111,7 +108,7 @@
 
           <div class="form-group">
             <label>活動海報圖片網址（Google Drive）</label>
-            <input type="url" id="eventPoster" placeholder="https://drive.google.com/...">
+            <input type="url" id="eventPoster" placeholder="https://drive.google.com/thumbnail?id=...&sz=w1000">
           </div>
 
           <div class="form-group">
@@ -131,7 +128,9 @@
     </div>
   </div>
 
-  <script src="../scripts/main.js"></script>
+  <!-- JavaScript Modules -->
   <script src="../scripts/jQuery.js"></script>
+  <script src="../scripts/utils.js"></script>
+  <script src="../scripts/staff-panel.js"></script>
 </body>
 </html>
