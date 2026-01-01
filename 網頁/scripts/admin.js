@@ -12,7 +12,45 @@ function loadEventStatistics() {
   if (!statsTableBody) return;
 
   // 從 localStorage 讀取所有活動（包含已截止）
-  const events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
+  let events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
+  
+  // 取得篩選條件
+  const yearFilter = document.getElementById('yearFilter');
+  const monthFilter = document.getElementById('monthFilter');
+  const selectedYear = yearFilter ? yearFilter.value : '';
+  const selectedMonth = monthFilter ? monthFilter.value : '';
+  
+  // 根據年份和月份篩選活動
+  if (selectedYear || selectedMonth) {
+    events = events.filter(event => {
+      // 嘗試從活動日期字串中提取年份和月份
+      const dateStr = event.date || '';
+      
+      // 嘗試匹配年份（支援格式：2025年、2025/、2025-）
+      let yearMatch = true;
+      if (selectedYear) {
+        yearMatch = dateStr.includes(selectedYear);
+      }
+      
+      // 嘗試匹配月份（支援格式：1月、2月、1/、2/、-01-、-1-）
+      let monthMatch = true;
+      if (selectedMonth) {
+        const monthNum = parseInt(selectedMonth);
+        // 匹配 "X月" 格式
+        const monthPatternChinese = new RegExp(`${monthNum}月`);
+        // 匹配 "YYYY/M/" 或 "YYYY-M-" 格式
+        const monthPatternSlash = new RegExp(`\\d{4}[/-]0?${monthNum}[/-]`);
+        // 匹配 "M/D" 格式
+        const monthPatternStart = new RegExp(`^0?${monthNum}[/-]`);
+        
+        monthMatch = monthPatternChinese.test(dateStr) || 
+                     monthPatternSlash.test(dateStr) || 
+                     monthPatternStart.test(dateStr);
+      }
+      
+      return yearMatch && monthMatch;
+    });
+  }
   
   // 從 localStorage 讀取所有報名記錄
   const registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
@@ -129,34 +167,99 @@ function loadRegistrationDetails(eventId = null) {
   if (eventId) {
     // 只顯示特定活動的報名記錄
     const eventRegs = registrations[eventId] || [];
-    allRegistrations = eventRegs.map(reg => ({ ...reg, eventId: eventId }));
+    const event = events.find(e => e.id === eventId);
+    const quota = event ? parseInt(event.quota) || 0 : 0;
+    allRegistrations = eventRegs.map(reg => ({ ...reg, eventId: eventId, eventQuota: quota }));
   } else {
     // 顯示所有活動的報名記錄
     Object.keys(registrations).forEach(id => {
       const eventRegs = registrations[id] || [];
+      const event = events.find(e => e.id === id);
+      const quota = event ? parseInt(event.quota) || 0 : 0;
       eventRegs.forEach(reg => {
-        allRegistrations.push({ ...reg, eventId: id });
+        allRegistrations.push({ ...reg, eventId: id, eventQuota: quota });
       });
     });
   }
 
-  // 按報名時間排序（最新在前）
-  allRegistrations.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  // 按報名時間排序（最早在前，用於決定序號）
+  allRegistrations.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
   // 如果沒有報名記錄，顯示提示訊息
+  if (!eventId) {
+    detailsTableBody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; color: var(--color-text-secondary); padding: 2rem;">
+          請先選擇一個活動以查看報名名單。
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
   if (allRegistrations.length === 0) {
     detailsTableBody.innerHTML = `
       <tr>
-        <td colspan="6" style="text-align: center; color: var(--color-text-secondary); padding: 2rem;">
-          目前尚無報名記錄。
+        <td colspan="7" style="text-align: center; color: var(--color-text-secondary); padding: 2rem;">
+          此活動目前尚無報名記錄。
         </td>
       </tr>
     `;
     return;
   }
 
-  // 渲染每筆報名記錄
+  // 計算報名狀態（社員優先邏輯）
+  // 依活動分組計算
+  const eventGroups = {};
   allRegistrations.forEach((reg, index) => {
+    reg.originalOrder = index + 1; // 原始報名順序（時間順序）
+    if (!eventGroups[reg.eventId]) {
+      eventGroups[reg.eventId] = [];
+    }
+    eventGroups[reg.eventId].push(reg);
+  });
+
+  // 對每個活動計算報名狀態
+  Object.keys(eventGroups).forEach(evtId => {
+    const regs = eventGroups[evtId];
+    const quota = regs[0]?.eventQuota || 0;
+    
+    if (quota === 0 || regs.length <= quota) {
+      // 無名額限制或未額滿，全部成功
+      regs.forEach(reg => {
+        reg.status = 'success';
+      });
+    } else {
+      // 額滿，社員優先
+      // 先把社員和非社員分開，各自按報名時間排序
+      const members = regs.filter(r => r.isMember === 'yes');
+      const nonMembers = regs.filter(r => r.isMember !== 'yes');
+      
+      // 社員先錄取
+      let remainingQuota = quota;
+      members.forEach(reg => {
+        if (remainingQuota > 0) {
+          reg.status = 'success';
+          remainingQuota--;
+        } else {
+          reg.status = 'waiting';
+        }
+      });
+      
+      // 剩餘名額給非社員
+      nonMembers.forEach(reg => {
+        if (remainingQuota > 0) {
+          reg.status = 'success';
+          remainingQuota--;
+        } else {
+          reg.status = 'waiting';
+        }
+      });
+    }
+  });
+
+  // 渲染每筆報名記錄
+  allRegistrations.forEach((reg) => {
     // 格式化報名時間
     const timestamp = new Date(reg.timestamp);
     const formattedTime = timestamp.toLocaleString('zh-TW', {
@@ -167,14 +270,26 @@ function loadRegistrationDetails(eventId = null) {
       minute: '2-digit'
     });
 
+    // 是否社員
+    const memberStatus = reg.isMember === 'yes' ? '是' : '否';
+    
+    // 報名狀態
+    let statusBadge = '';
+    if (reg.status === 'success') {
+      statusBadge = '<span class="badge success">成功</span>';
+    } else {
+      statusBadge = '<span class="badge" style="background-color: var(--color-warning); color: white;">候補</span>';
+    }
+
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td>${String(index + 1).padStart(3, '0')}</td>
+      <td>${String(reg.originalOrder).padStart(3, '0')}</td>
+      <td>${reg.department}</td>
       <td>${reg.name}</td>
       <td>${reg.studentId}</td>
-      <td>${reg.department}</td>
+      <td>${memberStatus}</td>
       <td>${formattedTime}</td>
-      <td><span class="badge success">成功</span></td>
+      <td>${statusBadge}</td>
     `;
     
     detailsTableBody.appendChild(row);
@@ -270,6 +385,33 @@ function initAdmin() {
   
   // 載入報名名單詳情（預設顯示全部）
   loadRegistrationDetails();
+  
+  // 綁定日期篩選事件
+  const yearFilter = document.getElementById('yearFilter');
+  const monthFilter = document.getElementById('monthFilter');
+  
+  if (yearFilter && monthFilter) {
+    // 初始狀態：若年份為「全部」，禁用月份選單
+    if (yearFilter.value === '') {
+      monthFilter.disabled = true;
+      monthFilter.value = '';
+    }
+    
+    yearFilter.addEventListener('change', function() {
+      // 若年份為「全部」，禁用月份選單並重置為「全部」
+      if (this.value === '') {
+        monthFilter.disabled = true;
+        monthFilter.value = '';
+      } else {
+        monthFilter.disabled = false;
+      }
+      loadEventStatistics();
+    });
+    
+    monthFilter.addEventListener('change', function() {
+      loadEventStatistics();
+    });
+  }
   
   // 綁定匯出和列印按鈕
   const exportBtn = document.getElementById('exportCSVBtn');

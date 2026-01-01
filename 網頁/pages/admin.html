@@ -78,10 +78,34 @@
       </p>
 
       <h3>活動篩選</h3>
-      <div style="display: flex; align-items: center; gap: 1rem; max-width: 400px; margin-bottom: 2rem;">
+      <div style="display: flex; align-items: flex-end; gap: 1rem; max-width: 400px; margin-bottom: 2rem;">
         <div class="form-group" style="margin-bottom: 0; flex: 1;">
-          <label>日期範圍（年/月）</label>
-          <input type="month" id="monthFilter">
+          <label>年份</label>
+          <select id="yearFilter">
+            <option value="">全部</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+            <option value="2027">2027</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0; flex: 1;">
+          <label>月份</label>
+          <select id="monthFilter">
+            <option value="">全部</option>
+            <option value="1">1 月</option>
+            <option value="2">2 月</option>
+            <option value="3">3 月</option>
+            <option value="4">4 月</option>
+            <option value="5">5 月</option>
+            <option value="6">6 月</option>
+            <option value="7">7 月</option>
+            <option value="8">8 月</option>
+            <option value="9">9 月</option>
+            <option value="10">10 月</option>
+            <option value="11">11 月</option>
+            <option value="12">12 月</option>
+          </select>
         </div>
       </div>
 
@@ -107,9 +131,10 @@
         <thead>
           <tr>
             <th>序號</th>
+            <th>系級</th>
             <th>姓名</th>
             <th>學號</th>
-            <th>系所</th>
+            <th>是否社員</th>
             <th>報名時間</th>
             <th>報名狀態</th>
           </tr>
