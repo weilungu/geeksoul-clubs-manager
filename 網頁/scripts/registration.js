@@ -74,6 +74,7 @@ function bindActivityCardEvents() {
 
       // 收集活動資訊
       currentActivity = {
+        id: this.dataset.id,
         title: this.dataset.title,
         date: this.dataset.date,
         location: this.dataset.location,

@@ -6,6 +6,51 @@
   <title>行政查核 - 極客魂社團線上表單系統</title>
   <script src="../scripts/TailwindCSS.js"></script>
   <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* 編輯按鈕預設隱藏，hover 時顯示 */
+    .edit-status-btn {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      margin-left: 0.5rem;
+      margin-right: 1rem;
+    }
+    .edit-status-btn:hover {
+      color: var(--color-primary);
+    }
+    #statsTableBody tr:hover .edit-status-btn {
+      opacity: 1;
+    }
+    /* 狀態下拉選單樣式 */
+    .status-select {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.85rem;
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+      margin-right: 1rem;
+    }
+    #statsTableBody tr:hover .status-select {
+      opacity: 1;
+    }
+    /* 活動列可點擊樣式 */
+    #statsTableBody tr {
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    #statsTableBody tr:hover {
+      background-color: rgba(183, 28, 28, 0.05);
+    }
+    #statsTableBody tr.selected {
+      background-color: rgba(183, 28, 28, 0.1);
+      border-left: 3px solid var(--color-primary);
+    }
+  </style>
 </head>
 <body>
   <!-- ========== Header ========== -->
@@ -27,26 +72,16 @@
   <main>
     <!-- 行政查核 Section -->
     <div class="card">
-      <h2>行政查核介面（系秘書用）</h2>
+      <h2>行政查核介面</h2>
       <p style="margin-bottom: 1.5rem; color: var(--color-text-secondary);">
         此介面提供系辦公室進行活動資料審核、人數統計與成果彙整。資料為唯讀模式。
       </p>
 
       <h3>活動篩選</h3>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 600px; margin-bottom: 2rem;">
-        <div class="form-group" style="margin-bottom: 0;">
-          <label>選擇活動</label>
-          <select>
-            <option>-- 全部活動 --</option>
-            <option>極客魂新生入門講座</option>
-            <option>Python 工作坊</option>
-            <option>Web 開發進階班</option>
-          </select>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 0;">
-          <label>日期範圍</label>
-          <input type="date">
+      <div style="display: flex; align-items: center; gap: 1rem; max-width: 400px; margin-bottom: 2rem;">
+        <div class="form-group" style="margin-bottom: 0; flex: 1;">
+          <label>日期範圍（年/月）</label>
+          <input type="month" id="monthFilter">
         </div>
       </div>
 
@@ -59,30 +94,11 @@
             <th>報名人數</th>
             <th>名額上限</th>
             <th>狀態</th>
+            <th style="width: 50px;"></th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <td>極客魂新生入門講座</td>
-            <td>2025-01-15</td>
-            <td>40</td>
-            <td>50</td>
-            <td><span class="badge success">進行中</span></td>
-          </tr>
-          <tr>
-            <td>Python 工作坊</td>
-            <td>2025-01-22</td>
-            <td>38</td>
-            <td>40</td>
-            <td><span class="badge success">進行中</span></td>
-          </tr>
-          <tr>
-            <td>Web 開發進階班</td>
-            <td>2025-02-05</td>
-            <td>40</td>
-            <td>40</td>
-            <td><span class="badge warning">已額滿</span></td>
-          </tr>
+        <tbody id="statsTableBody">
+          <!-- 活動統計將由 JavaScript 動態載入 -->
         </tbody>
       </table>
 
@@ -98,41 +114,19 @@
             <th>報名狀態</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <td>001</td>
-            <td>王小明</td>
-            <td>1101001</td>
-            <td>資訊工程系</td>
-            <td>2025-01-10 14:32</td>
-            <td><span class="badge success">成功</span></td>
-          </tr>
-          <tr>
-            <td>002</td>
-            <td>李小芳</td>
-            <td>1102045</td>
-            <td>資料科學系</td>
-            <td>2025-01-10 15:18</td>
-            <td><span class="badge success">成功</span></td>
-          </tr>
-          <tr>
-            <td>003</td>
-            <td>張子軒</td>
-            <td>1101078</td>
-            <td>資訊管理系</td>
-            <td>2025-01-10 16:05</td>
-            <td><span class="badge error">額滿</span></td>
-          </tr>
+        <tbody id="detailsTableBody">
+          <!-- 報名名單將由 JavaScript 動態載入 -->
         </tbody>
       </table>
 
       <div style="margin-top: 1.5rem;">
-        <button class="btn btn-primary">匯出 CSV</button>
-        <button class="btn btn-secondary" style="margin-left: 0.5rem;">列印</button>
+        <button class="btn btn-primary" id="exportCSVBtn">匯出 CSV</button>
+        <button class="btn btn-secondary" style="margin-left: 0.5rem;" id="printBtn">列印</button>
       </div>
     </div>
   </main>
 
-  <script src="../scripts/main.js"></script>
+  <script src="../scripts/utils.js"></script>
+  <script src="../scripts/admin.js"></script>
 </body>
 </html>

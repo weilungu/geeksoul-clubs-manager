@@ -10,9 +10,13 @@ function loadDynamicActivities() {
 
   const events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
   
-  events.forEach(event => {
+  // 過濾掉已截止的活動（available 為 false）
+  const availableEvents = events.filter(event => event.available !== false);
+  
+  availableEvents.forEach(event => {
     const activityCard = document.createElement('div');
     activityCard.className = 'activity-item clickable w-full max-w-full mx-auto';
+    activityCard.dataset.id = event.id;
     activityCard.dataset.available = event.available;
     activityCard.dataset.title = event.title;
     activityCard.dataset.date = event.date;

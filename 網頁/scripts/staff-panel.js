@@ -222,7 +222,10 @@ function loadCreatedEvents() {
   if (!eventsTableBody) return;
 
   // 從 localStorage 讀取活動
-  const events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
+  const allEvents = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
+  
+  // 過濾掉已截止的活動（available 為 false）
+  const events = allEvents.filter(event => event.available !== false);
   
   // 從 localStorage 讀取所有報名記錄
   const registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
@@ -286,19 +289,101 @@ function editEvent(eventId) {
   openEditEventModal(eventId);
 }
 
-// 查看報名名單（占位功能）
+// 查看報名名單
 function viewRegistrations(eventId) {
   const registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
+  const events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
   const eventRegistrations = registrations[eventId] || [];
+  const event = events.find(e => e.id === eventId);
   
-  if (eventRegistrations.length === 0) {
-    alert('目前尚無報名記錄。');
-    return;
+  const modal = document.getElementById('registrationsModal');
+  const modalTitle = document.getElementById('registrationsModalTitle');
+  const tableContainer = document.getElementById('registrationsTableContainer');
+  
+  if (!modal || !tableContainer) return;
+  
+  // 設定標題
+  if (modalTitle && event) {
+    modalTitle.textContent = `報名名單：${event.title}`;
   }
   
-  // 簡單顯示報名人數
-  alert(`目前已有 ${eventRegistrations.length} 人報名此活動。\n\n詳細名單功能開發中...`);
-  // TODO: 實作詳細名單顯示
+  // 如果沒有報名記錄
+  if (eventRegistrations.length === 0) {
+    tableContainer.innerHTML = `
+      <div style="text-align: center; color: var(--color-text-secondary); padding: 2rem;">
+        目前尚無報名記錄。
+      </div>
+    `;
+  } else {
+    // 生成報名名單表格
+    let tableHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>序號</th>
+            <th>姓名</th>
+            <th>學號</th>
+            <th>系所</th>
+            <th>社員身分</th>
+            <th>報名時間</th>
+            <th>報名狀態</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    eventRegistrations.forEach((reg, index) => {
+      // 格式化報名時間
+      const timestamp = new Date(reg.timestamp);
+      const formattedTime = timestamp.toLocaleString('zh-TW', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      // 社員身分顯示
+      const memberStatus = reg.isMember === 'yes' ? '社員' : '非社員';
+      
+      tableHTML += `
+        <tr>
+          <td>${String(index + 1).padStart(3, '0')}</td>
+          <td>${reg.name}</td>
+          <td>${reg.studentId}</td>
+          <td>${reg.department}</td>
+          <td>${memberStatus}</td>
+          <td>${formattedTime}</td>
+          <td><span class="badge success">成功</span></td>
+        </tr>
+      `;
+    });
+    
+    tableHTML += `
+        </tbody>
+      </table>
+      <div style="margin-top: 1rem; color: var(--color-text-secondary);">
+        共 ${eventRegistrations.length} 筆報名記錄
+      </div>
+    `;
+    
+    tableContainer.innerHTML = tableHTML;
+  }
+  
+  // 開啟 Modal
+  $(modal).css({'display': 'flex', 'opacity': 0}).scrollTop(0);
+  $(modal).animate({'opacity': 1}, 300);
+  $('body').addClass('modal-open');
+}
+
+// 關閉報名名單 Modal
+function closeRegistrationsModal() {
+  const modal = document.getElementById('registrationsModal');
+  if (!modal) return;
+  
+  $(modal).fadeOut(300, function() {
+    $('body').removeClass('modal-open');
+  });
 }
 
 // 初始化幹部面板
@@ -323,6 +408,7 @@ function initStaffPanel() {
   window.openCreateEventModal = openCreateEventModal;
   window.editEvent = editEvent;
   window.viewRegistrations = viewRegistrations;
+  window.closeRegistrationsModal = closeRegistrationsModal;
   
   // 載入已建立的活動列表
   loadCreatedEvents();

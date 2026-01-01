@@ -149,5 +149,23 @@
   <script src="../scripts/jQuery.js"></script>
   <script src="../scripts/utils.js"></script>
   <script src="../scripts/staff-panel.js"></script>
+
+  <!-- ========== 報名名單 Modal ========== -->
+  <div id="registrationsModal" class="modal">
+    <div class="modal-content" style="max-width: 900px;">
+      <div class="modal-header">
+        <h2 id="registrationsModalTitle">報名名單</h2>
+        <button type="button" class="modal-close" onclick="closeRegistrationsModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="registrationsTableContainer">
+          <!-- 報名名單將由 JavaScript 動態載入 -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeRegistrationsModal()">關閉</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
