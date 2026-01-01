@@ -273,13 +273,18 @@ function loadRegistrationDetails(eventId = null) {
     // 是否社員
     const memberStatus = reg.isMember === 'yes' ? '是' : '否';
     
-    // 報名狀態
-    let statusBadge = '';
-    if (reg.status === 'success') {
-      statusBadge = '<span class="badge success">成功</span>';
-    } else {
-      statusBadge = '<span class="badge" style="background-color: var(--color-warning); color: white;">候補</span>';
-    }
+    // 報名狀態下拉選單
+    const currentStatus = reg.savedStatus || reg.status; // 優先使用已儲存的狀態
+    const statusSelect = `
+      <select class="registration-status-select" 
+              data-event-id="${reg.eventId}" 
+              data-student-id="${reg.studentId}"
+              onchange="updateRegistrationStatus(this)">
+        <option value="success" ${currentStatus === 'success' ? 'selected' : ''}>成功</option>
+        <option value="leave" ${currentStatus === 'leave' ? 'selected' : ''}>請假</option>
+        <option value="waiting" ${currentStatus === 'waiting' ? 'selected' : ''}>候補</option>
+      </select>
+    `;
 
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -289,11 +294,61 @@ function loadRegistrationDetails(eventId = null) {
       <td>${reg.studentId}</td>
       <td>${memberStatus}</td>
       <td>${formattedTime}</td>
-      <td>${statusBadge}</td>
+      <td>${statusSelect}</td>
     `;
     
     detailsTableBody.appendChild(row);
   });
+  
+  // 初始化所有下拉選單的樣式
+  updateAllStatusSelectStyles();
+}
+
+// 更新所有狀態下拉選單的樣式
+function updateAllStatusSelectStyles() {
+  document.querySelectorAll('.registration-status-select').forEach(select => {
+    updateStatusSelectStyle(select);
+  });
+}
+
+// 更新單個狀態下拉選單的樣式
+function updateStatusSelectStyle(select) {
+  const value = select.value;
+  // 移除所有狀態樣式
+  select.classList.remove('bg-green-500', 'bg-yellow-500', 'bg-red-500', 'text-white');
+  
+  // 根據狀態添加對應樣式
+  if (value === 'success') {
+    select.classList.add('bg-green-500', 'text-white');
+  } else if (value === 'leave') {
+    select.classList.add('bg-yellow-500', 'text-white');
+  } else if (value === 'waiting') {
+    select.classList.add('bg-red-500', 'text-white');
+  }
+}
+
+// 更新報名狀態
+function updateRegistrationStatus(selectElement) {
+  const eventId = selectElement.dataset.eventId;
+  const studentId = selectElement.dataset.studentId;
+  const newStatus = selectElement.value;
+  
+  // 更新下拉選單樣式
+  updateStatusSelectStyle(selectElement);
+  
+  // 從 localStorage 讀取報名記錄
+  const registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
+  
+  if (registrations[eventId]) {
+    // 找到對應的報名記錄並更新狀態
+    const regIndex = registrations[eventId].findIndex(r => r.studentId === studentId);
+    if (regIndex !== -1) {
+      registrations[eventId][regIndex].savedStatus = newStatus;
+      
+      // 儲存到 localStorage
+      localStorage.setItem('geeksoulRegistrations', JSON.stringify(registrations));
+    }
+  }
 }
 
 // 匯出 CSV
