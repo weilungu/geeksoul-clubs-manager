@@ -18,13 +18,7 @@ function renderActivityInfo(activity, isAvailable) {
   const infoItems = [
     { icon: '📅', label: '活動時間', value: activity.date },
     { icon: '📍', label: '活動地點', value: activity.location },
-    { icon: '👤', label: '講師', value: activity.speaker },
-    { 
-      icon: '📊', 
-      label: '剩餘名額', 
-      value: isAvailable ? `${activity.quota} 個名額` : '已額滿',
-      style: isAvailable ? '' : 'color: var(--color-error);'
-    }
+    { icon: '👤', label: '講師', value: activity.speaker }
   ];
 
   // 生成 info-item HTML
