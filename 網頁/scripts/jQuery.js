@@ -41,53 +41,11 @@ $(document).ready(function() {
   // ========== 新增活動 Modal (staff-panel.html) ==========
   const $createEventModal = $('#createEventModal');
 
-  // 開啟新增活動 Modal
-  window.openCreateEventModal = function() {
-    $createEventModal.css('display', 'flex').hide().fadeIn(300);
-    $('body').addClass('modal-open');
-  };
-
-  // 關閉新增活動 Modal
-  window.closeCreateEventModal = function() {
-    $createEventModal.fadeOut(300, function() {
-      $('body').removeClass('modal-open');
-    });
-  };
-
   // 點擊背景關閉新增活動 Modal
   $createEventModal.on('click', function(e) {
     if (e.target === this) {
       window.closeCreateEventModal();
     }
-  });
-
-  // 關閉按鈕事件
-  $createEventModal.find('.modal-close').on('click', function() {
-    window.closeCreateEventModal();
-  });
-
-  // 取消按鈕事件
-  $('#cancelCreateEventBtn').on('click', function() {
-    window.closeCreateEventModal();
-  });
-
-  // 提交新增活動表單（使用 form submit 事件觸發原生驗證）
-  $('#createEventForm').on('submit', function(e) {
-    // 檢查表單驗證
-    if (!this.checkValidity()) {
-      e.preventDefault();
-      e.stopPropagation();
-      // 觸發瀏覽器原生驗證訊息
-      this.reportValidity();
-      return;
-    }
-    
-    e.preventDefault();
-    // TODO: 實作建立活動邏輯
-    alert('活動建立成功！');
-    window.closeCreateEventModal();
-    // 重置表單
-    this.reset();
   });
 
   // ========== 共用：ESC 鍵關閉 Modal ==========

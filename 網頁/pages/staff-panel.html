@@ -7,6 +7,25 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="../scripts/TailwindCSS.js"></script>
   <link rel="stylesheet" href="../styles/main.css">
+  <style>
+    .success-notification {
+      background: linear-gradient(135deg, #2E7D32, #43A047);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      margin-top: 1.5rem;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .success-notification::before {
+      content: '✓';
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
   <!-- ========== Header ========== -->
@@ -52,18 +71,15 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td><strong>示例活動：新生入門講座</strong></td>
-              <td><span class="badge success">開放報名</span></td>
-              <td>15 / 50</td>
-              <td>
-                <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">編輯</button>
-                <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem; margin-left: 0.5rem;">查看名單</button>
-              </td>
-            </tr>
+            <!-- 活動將由 JavaScript 動態載入 -->
           </tbody>
         </table>
       </div>
+    </div>
+
+    <!-- 成功訊息通知 -->
+    <div id="successNotification" class="success-notification" style="display: none;">
+      <span id="successMessage"></span>
     </div>
   </main>
 
@@ -107,8 +123,9 @@
           </div>
 
           <div class="form-group">
-            <label>活動海報圖片網址（Google Drive）</label>
-            <input type="url" id="eventPoster" placeholder="https://drive.google.com/thumbnail?id=...&sz=w1000">
+            <label>活動海報（Google Drive ID）</label>
+            <input type="text" id="eventPoster" placeholder="例：1Q3WMjdgau9bg9WJv7KutwhRtOXvZ6C-t">
+            <p class="form-hint">請輸入 Google Drive 檔案 ID，系統將自動轉換為縮圖連結</p>
           </div>
 
           <div class="form-group">

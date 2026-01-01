@@ -157,8 +157,39 @@ function handleRegistrationSubmit() {
       }
     }
 
+    const department = departmentInput.value.trim();
     const name = nameInput.value.trim();
+    const studentId = studentIdInput.value.trim();
     const email = emailInput.value.trim();
+    const isMember = document.querySelector('input[name="isMember"]:checked')?.value;
+    const lineNickname = document.getElementById('lineNickname')?.value.trim();
+
+    // 儲存報名資料到 localStorage
+    const registrationData = {
+      eventId: currentActivity.id,
+      eventTitle: currentActivity.title,
+      department: department,
+      name: name,
+      studentId: studentId,
+      email: email,
+      isMember: isMember,
+      lineNickname: lineNickname || '',
+      timestamp: new Date().toISOString()
+    };
+
+    // 從 localStorage 讀取現有報名記錄
+    let registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
+    
+    // 確保該活動的報名陣列存在
+    if (!registrations[currentActivity.id]) {
+      registrations[currentActivity.id] = [];
+    }
+    
+    // 新增報名記錄
+    registrations[currentActivity.id].push(registrationData);
+    
+    // 儲存回 localStorage
+    localStorage.setItem('geeksoulRegistrations', JSON.stringify(registrations));
 
     // 成功訊息
     alert(`感謝報名！\n\n活動：${currentActivity.title}\n姓名：${name}\nGmail：${email}\n\n系統已寄送確認信至您的 Gmail。`);
