@@ -209,11 +209,86 @@ function handleCreateEventSubmit(e) {
     
     localStorage.setItem('geeksoulEvents', JSON.stringify(events));
     
+    // 重新計算該活動的報名狀態
+    recalculateRegistrationStatus(currentEditingEventId, parseInt(eventQuota) || 0);
+    
     // 關閉 Modal 並顯示成功訊息
     closeCreateEventModal();
     loadCreatedEvents();
     showSuccessNotification(`活動「${eventName}」已成功更新！`);
   }
+}
+
+// 重新計算報名狀態（編輯活動名額後觸發）
+function recalculateRegistrationStatus(eventId, newQuota) {
+  const registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
+  const eventRegs = registrations[eventId];
+  
+  if (!eventRegs || eventRegs.length === 0) return;
+  
+  // 按報名時間排序（最早在前）
+  const sortedRegs = [...eventRegs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  
+  // 重新計算狀態
+  if (newQuota === 0 || sortedRegs.length <= newQuota) {
+    // 無名額限制或未額滿，清除非手動設定的狀態（會自動判定為成功）
+    sortedRegs.forEach(reg => {
+      // 只清除系統計算的狀態，保留手動設定的 savedStatus
+      // 如果有 savedStatus 且不是 waiting（候補），就保留
+      // 如果 savedStatus 是 waiting 但現在不需要候補了，就清除
+      if (reg.savedStatus === 'waiting') {
+        delete reg.savedStatus;
+      }
+    });
+  } else {
+    // 額滿，社員優先
+    const members = sortedRegs.filter(r => r.isMember === 'yes');
+    const nonMembers = sortedRegs.filter(r => r.isMember !== 'yes');
+    
+    let remainingQuota = newQuota;
+    
+    // 社員先錄取
+    members.forEach(reg => {
+      // 只處理沒有手動設定狀態的（或手動設定為 success/waiting 的）
+      if (!reg.savedStatus || reg.savedStatus === 'success' || reg.savedStatus === 'waiting') {
+        if (remainingQuota > 0) {
+          // 如果之前手動設定為 waiting，現在有名額了，清除讓它變成 success
+          if (reg.savedStatus === 'waiting') {
+            delete reg.savedStatus;
+          }
+          remainingQuota--;
+        } else {
+          // 沒名額了，設為候補
+          reg.savedStatus = 'waiting';
+        }
+      } else {
+        // 手動設定為請假的，不佔名額，但也不改變狀態
+      }
+    });
+    
+    // 剩餘名額給非社員
+    nonMembers.forEach(reg => {
+      if (!reg.savedStatus || reg.savedStatus === 'success' || reg.savedStatus === 'waiting') {
+        if (remainingQuota > 0) {
+          if (reg.savedStatus === 'waiting') {
+            delete reg.savedStatus;
+          }
+          remainingQuota--;
+        } else {
+          reg.savedStatus = 'waiting';
+        }
+      }
+    });
+  }
+  
+  // 更新原始陣列的順序（保持原本的順序）
+  const updatedRegs = eventRegs.map(original => {
+    const updated = sortedRegs.find(r => r.studentId === original.studentId);
+    return updated || original;
+  });
+  
+  registrations[eventId] = updatedRegs;
+  localStorage.setItem('geeksoulRegistrations', JSON.stringify(registrations));
 }
 
 // 載入已建立的活動
@@ -295,6 +370,7 @@ function viewRegistrations(eventId) {
   const events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
   const eventRegistrations = registrations[eventId] || [];
   const event = events.find(e => e.id === eventId);
+  const quota = event ? parseInt(event.quota) || 0 : 0;
   
   const modal = document.getElementById('registrationsModal');
   const modalTitle = document.getElementById('registrationsModalTitle');
@@ -315,16 +391,45 @@ function viewRegistrations(eventId) {
       </div>
     `;
   } else {
+    // 按報名時間排序（最早在前）
+    const sortedRegs = [...eventRegistrations].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    
+    // 計算報名狀態（社員優先邏輯）
+    if (quota === 0 || sortedRegs.length <= quota) {
+      // 無名額限制或未額滿，全部成功
+      sortedRegs.forEach(reg => {
+        if (!reg.savedStatus) reg.calculatedStatus = 'success';
+      });
+    } else {
+      // 額滿，社員優先
+      const members = sortedRegs.filter(r => r.isMember === 'yes');
+      const nonMembers = sortedRegs.filter(r => r.isMember !== 'yes');
+      
+      let remainingQuota = quota;
+      members.forEach(reg => {
+        if (!reg.savedStatus) {
+          reg.calculatedStatus = remainingQuota > 0 ? 'success' : 'waiting';
+          if (remainingQuota > 0) remainingQuota--;
+        }
+      });
+      nonMembers.forEach(reg => {
+        if (!reg.savedStatus) {
+          reg.calculatedStatus = remainingQuota > 0 ? 'success' : 'waiting';
+          if (remainingQuota > 0) remainingQuota--;
+        }
+      });
+    }
+    
     // 生成報名名單表格
     let tableHTML = `
       <table>
         <thead>
           <tr>
             <th>序號</th>
+            <th>系級</th>
             <th>姓名</th>
             <th>學號</th>
-            <th>系所</th>
-            <th>社員身分</th>
+            <th>是否社員</th>
             <th>報名時間</th>
             <th>報名狀態</th>
           </tr>
@@ -332,7 +437,7 @@ function viewRegistrations(eventId) {
         <tbody>
     `;
     
-    eventRegistrations.forEach((reg, index) => {
+    sortedRegs.forEach((reg, index) => {
       // 格式化報名時間
       const timestamp = new Date(reg.timestamp);
       const formattedTime = timestamp.toLocaleString('zh-TW', {
@@ -343,18 +448,29 @@ function viewRegistrations(eventId) {
         minute: '2-digit'
       });
       
-      // 社員身分顯示
-      const memberStatus = reg.isMember === 'yes' ? '社員' : '非社員';
+      // 是否社員
+      const memberStatus = reg.isMember === 'yes' ? '是' : '否';
+      
+      // 報名狀態（優先使用已儲存的狀態）
+      const status = reg.savedStatus || reg.calculatedStatus || 'success';
+      let statusBadge = '';
+      if (status === 'success') {
+        statusBadge = '<span class="badge success">成功</span>';
+      } else if (status === 'leave') {
+        statusBadge = '<span class="badge" style="background-color: #F59E0B; color: white;">請假</span>';
+      } else if (status === 'waiting') {
+        statusBadge = '<span class="badge" style="background-color: #EF4444; color: white;">候補</span>';
+      }
       
       tableHTML += `
         <tr>
           <td>${String(index + 1).padStart(3, '0')}</td>
+          <td>${reg.department}</td>
           <td>${reg.name}</td>
           <td>${reg.studentId}</td>
-          <td>${reg.department}</td>
           <td>${memberStatus}</td>
           <td>${formattedTime}</td>
-          <td><span class="badge success">成功</span></td>
+          <td>${statusBadge}</td>
         </tr>
       `;
     });
