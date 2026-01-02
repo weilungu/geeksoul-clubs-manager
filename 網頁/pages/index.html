@@ -30,7 +30,7 @@
         </p>
 
         <h3>近期活動</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" id="availableActivities">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="availableActivities">
           <!-- 活動卡片將由 JavaScript 動態載入 -->
         </div>
       </div>
@@ -87,6 +87,10 @@
           <div class="form-group">
             <label>Line 暱稱 <span id="lineNameRequired" class="required">*</span></label>
             <input type="text" id="lineName" placeholder="請輸入您在 Line 群組的暱稱" required>
+            <label style="display: flex; align-items: center; margin-top: 0.5rem;">
+              <input type="checkbox" id="sameAsName" style="width: auto; margin-right: 0.5rem;">
+              同姓名
+            </label>
             <p class="form-hint" id="lineNameHint">請輸入您在社團 Line 群組中顯示的暱稱</p>
           </div>
 
@@ -107,6 +111,12 @@
         <button class="btn btn-success" id="submitBtn">提交報名</button>
       </div>
     </div>
+  </div>
+
+  <!-- 成功提示標籤 -->
+  <div id="successToast" class="success-toast">
+    <span class="toast-icon">✓</span>
+    <span class="toast-message">成功送出表單！系統已寄送確認信至您的 Email。</span>
   </div>
 
   <!-- JavaScript Modules -->

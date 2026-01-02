@@ -3,6 +3,36 @@
  * 表單驗證模組：處理所有表單欄位的驗證邏輯
  */
 
+// 「同姓名」checkbox 邏輯
+function initSameAsNameCheckbox() {
+  const sameAsNameCheckbox = document.getElementById('sameAsName');
+  const nameInput = document.getElementById('name');
+  const lineNameInput = document.getElementById('lineName');
+
+  if (!sameAsNameCheckbox || !nameInput || !lineNameInput) return;
+
+  // 當勾選「同姓名」時，自動複製姓名到 Line 暱稱
+  sameAsNameCheckbox.addEventListener('change', function() {
+    if (this.checked) {
+      lineNameInput.value = nameInput.value;
+    }
+  });
+
+  // 當姓名欄位變更時，如果「同姓名」有勾選，同步更新 Line 暱稱
+  nameInput.addEventListener('input', function() {
+    if (sameAsNameCheckbox.checked) {
+      lineNameInput.value = this.value;
+    }
+  });
+
+  // 當手動編輯 Line 暱稱時，取消「同姓名」勾選
+  lineNameInput.addEventListener('input', function() {
+    if (sameAsNameCheckbox.checked && this.value !== nameInput.value) {
+      sameAsNameCheckbox.checked = false;
+    }
+  });
+}
+
 // 社員身份選擇邏輯
 function initMemberSelection() {
   const memberYes = document.getElementById('memberYes');
@@ -103,6 +133,7 @@ function initFormValidation() {
 
 // 初始化驗證模組
 function initValidation() {
+  initSameAsNameCheckbox();
   initMemberSelection();
   initFormValidation();
 }

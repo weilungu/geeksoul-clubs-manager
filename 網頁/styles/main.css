@@ -258,9 +258,10 @@ main {
 /* ========== Grid Layout ========== */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
 }
+
+/* TailwindCSS 已處理響應式網格，移除舊的 auto-fit */
 
 /* ========== Activity Card ========== */
 .activity-item {
@@ -605,6 +606,44 @@ body.modal-open {
 
 .modal-footer .btn {
   min-width: 100px;
+}
+
+/* ========== Success Toast ========== */
+.success-toast {
+  position: fixed;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #2E7D32, #43A047);
+  color: white;
+  padding: 1.2rem 2rem;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(46, 125, 50, 0.4);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  gap: 0.8rem;
+  font-weight: 500;
+  font-size: 1rem;
+  min-width: 320px;
+  max-width: 90%;
+}
+
+.toast-icon {
+  font-size: 1.5rem;
+  font-weight: bold;
+  background-color: rgba(255, 255, 255, 0.3);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toast-message {
+  flex: 1;
 }
 
 /* ========== Responsive ========== */

@@ -6,6 +6,21 @@
 let currentActivity = null;
 
 /**
+ * 顯示成功提示標籤
+ */
+function showSuccessToast() {
+  const toast = $('#successToast');
+  
+  // 淡入
+  toast.fadeIn(400, function() {
+    // 停留 3 秒後淡出
+    setTimeout(function() {
+      toast.fadeOut(400);
+    }, 3000);
+  });
+}
+
+/**
  * 動態生成活動資訊區塊
  * @param {Object} activity - 活動資料物件
  * @param {boolean} isAvailable - 是否還有名額
@@ -186,10 +201,14 @@ function handleRegistrationSubmit() {
     // 儲存回 localStorage
     localStorage.setItem('geeksoulRegistrations', JSON.stringify(registrations));
 
-    // 成功訊息
-    alert(`感謝報名！\n\n活動：${currentActivity.title}\n姓名：${name}\nGmail：${email}\n\n系統已寄送確認信至您的 Gmail。`);
-    
-    closeRegistrationModal();
+    // 使用 jQuery 淡出 Modal
+    const modal = document.getElementById('registrationModal');
+    $(modal).fadeOut(300, function() {
+      document.body.classList.remove('modal-open');
+      
+      // 顯示成功提示
+      showSuccessToast();
+    });
   });
 
   // 允許 Enter 鍵提交
