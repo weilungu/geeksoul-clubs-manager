@@ -76,14 +76,51 @@ function loadEventStatistics() {
     const eventRegistrations = registrations[event.id] || [];
     const registeredCount = eventRegistrations.length;
     
-    // 判斷狀態
+    // 計算實際「成功」報名的人數（考慮手動修改的狀態）
+    const quota = parseInt(event.quota) || 0;
+    let successCount = 0;
+    
+    if (eventRegistrations.length > 0) {
+      // 按報名時間排序
+      const sortedRegs = [...eventRegistrations].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      
+      // 計算每個人的狀態
+      const members = sortedRegs.filter(r => r.isMember === 'yes');
+      const nonMembers = sortedRegs.filter(r => r.isMember !== 'yes');
+      
+      let remainingQuota = quota;
+      
+      // 計算社員的狀態
+      members.forEach(reg => {
+        const status = reg.savedStatus || (remainingQuota > 0 ? 'success' : 'waiting');
+        if (status === 'success') {
+          successCount++;
+        }
+        if (!reg.savedStatus && remainingQuota > 0) {
+          remainingQuota--;
+        }
+      });
+      
+      // 計算非社員的狀態
+      nonMembers.forEach(reg => {
+        const status = reg.savedStatus || (remainingQuota > 0 ? 'success' : 'waiting');
+        if (status === 'success') {
+          successCount++;
+        }
+        if (!reg.savedStatus && remainingQuota > 0) {
+          remainingQuota--;
+        }
+      });
+    }
+    
+    // 判斷狀態（根據成功報名人數）
     let statusBadge = '';
     let statusText = '';
     
     if (!event.available) {
       statusBadge = 'secondary';
       statusText = '已截止';
-    } else if (registeredCount >= event.quota) {
+    } else if (successCount >= quota && quota > 0) {
       statusBadge = 'warning';
       statusText = '已額滿';
     } else {
@@ -336,17 +373,120 @@ function updateRegistrationStatus(selectElement) {
   // 更新下拉選單樣式
   updateStatusSelectStyle(selectElement);
   
-  // 從 localStorage 讀取報名記錄
+  // 從 localStorage 讀取資料
   const registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
+  const events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
+  const event = events.find(e => e.id == eventId);
+  const quota = event ? parseInt(event.quota) || 0 : 0;
   
   if (registrations[eventId]) {
     // 找到對應的報名記錄並更新狀態
     const regIndex = registrations[eventId].findIndex(r => r.studentId === studentId);
     if (regIndex !== -1) {
+      const oldStatus = registrations[eventId][regIndex].savedStatus || 'success';
       registrations[eventId][regIndex].savedStatus = newStatus;
+      
+      // 如果從「成功」變成「請假」或「候補」，需要遞補
+      if (oldStatus === 'success' && (newStatus === 'leave' || newStatus === 'waiting')) {
+        // 執行遞補邏輯
+        autoFillVacancy(registrations[eventId], quota);
+      }
+      
+      // 如果從「請假」或「候補」變成「成功」，需要檢查是否超額
+      if ((oldStatus === 'leave' || oldStatus === 'waiting') && newStatus === 'success') {
+        // 檢查是否超額，若超額則將最後一個成功的非社員改為候補
+        handleOverCapacity(registrations[eventId], quota, studentId);
+      }
       
       // 儲存到 localStorage
       localStorage.setItem('geeksoulRegistrations', JSON.stringify(registrations));
+      
+      // 重新載入報名名單和活動統計
+      loadRegistrationDetails(eventId);
+      loadEventStatistics();
+    }
+  }
+}
+
+// 自動遞補邏輯
+function autoFillVacancy(eventRegs, quota) {
+  if (quota === 0) return; // 無名額限制
+  
+  // 按報名時間排序
+  const sortedRegs = [...eventRegs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  
+  // 計算目前成功的人數
+  let successCount = 0;
+  sortedRegs.forEach(reg => {
+    if (reg.savedStatus === 'success') {
+      successCount++;
+    }
+  });
+  
+  // 如果還有名額，找候補的人遞補
+  if (successCount < quota) {
+    const neededCount = quota - successCount;
+    
+    // 找出所有候補的人，社員優先
+    const waitingMembers = sortedRegs.filter(r => r.savedStatus === 'waiting' && r.isMember === 'yes');
+    const waitingNonMembers = sortedRegs.filter(r => r.savedStatus === 'waiting' && r.isMember !== 'yes');
+    const waitingList = [...waitingMembers, ...waitingNonMembers];
+    
+    // 遞補
+    let filled = 0;
+    for (const reg of waitingList) {
+      if (filled >= neededCount) break;
+      
+      // 在原始陣列中找到並更新
+      const originalReg = eventRegs.find(r => r.studentId === reg.studentId);
+      if (originalReg) {
+        originalReg.savedStatus = 'success';
+        filled++;
+      }
+    }
+  }
+}
+
+// 處理超額情況（當手動設為成功導致超額時）
+function handleOverCapacity(eventRegs, quota, excludeStudentId) {
+  if (quota === 0) return; // 無名額限制
+  
+  // 按報名時間排序
+  const sortedRegs = [...eventRegs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  
+  // 計算目前成功的人數
+  let successCount = 0;
+  sortedRegs.forEach(reg => {
+    if (reg.savedStatus === 'success') {
+      successCount++;
+    }
+  });
+  
+  // 如果超額，從最後報名的非社員開始改為候補
+  if (successCount > quota) {
+    const excessCount = successCount - quota;
+    
+    // 找出所有成功的人（排除剛手動設定的那個），從最晚報名的開始
+    const successRegs = sortedRegs
+      .filter(r => r.savedStatus === 'success' && r.studentId !== excludeStudentId)
+      .reverse(); // 最晚報名的在前
+    
+    // 非社員優先被改為候補
+    const successNonMembers = successRegs.filter(r => r.isMember !== 'yes');
+    const successMembers = successRegs.filter(r => r.isMember === 'yes');
+    const candidatesToWaiting = [...successNonMembers, ...successMembers];
+    
+    // 改為候補
+    let removed = 0;
+    for (const reg of candidatesToWaiting) {
+      if (removed >= excessCount) break;
+      
+      // 在原始陣列中找到並更新
+      const originalReg = eventRegs.find(r => r.studentId === reg.studentId);
+      if (originalReg) {
+        originalReg.savedStatus = 'waiting';
+        removed++;
+      }
     }
   }
 }
