@@ -157,7 +157,7 @@ function handleRegistrationSubmit() {
 
   if (!submitBtn) return;
 
-  submitBtn.addEventListener('click', function() {
+  submitBtn.addEventListener('click', async function() {
     // 檢查所有欄位是否有效
     const inputs = [departmentInput, nameInput, studentIdInput, emailInput, agreementCheckbox];
     for (const input of inputs) {
@@ -172,9 +172,9 @@ function handleRegistrationSubmit() {
     const studentId = studentIdInput.value.trim();
     const email = emailInput.value.trim();
     const isMember = document.querySelector('input[name="isMember"]:checked')?.value;
-    const lineNickname = document.getElementById('lineNickname')?.value.trim();
+    const lineName = document.getElementById('lineName')?.value.trim();
 
-    // 儲存報名資料到 localStorage
+    // 準備報名資料
     const registrationData = {
       eventId: currentActivity.id,
       eventTitle: currentActivity.title,
@@ -183,32 +183,24 @@ function handleRegistrationSubmit() {
       studentId: studentId,
       email: email,
       isMember: isMember,
-      lineNickname: lineNickname || '',
-      timestamp: new Date().toISOString()
+      lineName: lineName || ''
     };
 
-    // 從 localStorage 讀取現有報名記錄
-    let registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
+    // 呼叫 API 提交報名（會根據 USE_LOCAL_STORAGE 自動切換）
+    const result = await submitRegistration(registrationData);
     
-    // 確保該活動的報名陣列存在
-    if (!registrations[currentActivity.id]) {
-      registrations[currentActivity.id] = [];
+    if (result.success) {
+      // 使用 jQuery 淡出 Modal
+      const modal = document.getElementById('registrationModal');
+      $(modal).fadeOut(300, function() {
+        document.body.classList.remove('modal-open');
+        
+        // 顯示成功提示
+        showSuccessToast();
+      });
+    } else {
+      alert('報名失敗：' + result.message);
     }
-    
-    // 新增報名記錄
-    registrations[currentActivity.id].push(registrationData);
-    
-    // 儲存回 localStorage
-    localStorage.setItem('geeksoulRegistrations', JSON.stringify(registrations));
-
-    // 使用 jQuery 淡出 Modal
-    const modal = document.getElementById('registrationModal');
-    $(modal).fadeOut(300, function() {
-      document.body.classList.remove('modal-open');
-      
-      // 顯示成功提示
-      showSuccessToast();
-    });
   });
 
   // 允許 Enter 鍵提交

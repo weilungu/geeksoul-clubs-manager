@@ -7,22 +7,30 @@
 let selectedEventId = null;
 
 // 載入活動統計（包含所有狀態的活動）
-function loadEventStatistics() {
+async function loadEventStatistics() {
   const statsTableBody = document.getElementById('statsTableBody');
   if (!statsTableBody) return;
 
-  // 從 localStorage 讀取所有活動（包含已截止）
-  let events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
+  // 從 API 或 localStorage 讀取所有活動（包含已截止）
+  let events = await fetchActivities();
   
   // 取得篩選條件
   const yearFilter = document.getElementById('yearFilter');
   const monthFilter = document.getElementById('monthFilter');
+  const ongoingFilter = document.getElementById('ongoingFilter');
   const selectedYear = yearFilter ? yearFilter.value : '';
   const selectedMonth = monthFilter ? monthFilter.value : '';
+  const onlyOngoing = selectedYear === '__ongoing__' || selectedMonth === '__ongoing__';
   
   // 根據年份和月份篩選活動
   if (selectedYear || selectedMonth) {
     events = events.filter(event => {
+      // 如果選中特殊值，只顯示無截止時間的活動
+      if (onlyOngoing) {
+        // deadline 為空字串或不存在表示持續進行
+        return !event.deadline || event.deadline === '';
+      }
+      
       // 嘗試從活動日期字串中提取年份和月份
       const dateStr = event.date || '';
       
@@ -52,8 +60,8 @@ function loadEventStatistics() {
     });
   }
   
-  // 從 localStorage 讀取所有報名記錄
-  const registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
+  // 從 API 或 localStorage 讀取所有報名記錄
+  const registrations = await fetchRegistrations();
 
   // 清空表格
   statsTableBody.innerHTML = '';
@@ -76,7 +84,7 @@ function loadEventStatistics() {
     const eventRegistrations = registrations[event.id] || [];
     const registeredCount = eventRegistrations.length;
     
-    // 計算實際「成功」報名的人數（考慮手動修改的狀態）
+    // 計算實際「成功」報名的人數（使用統一的計算函式）
     const quota = parseInt(event.quota) || 0;
     let successCount = 0;
     
@@ -84,33 +92,11 @@ function loadEventStatistics() {
       // 按報名時間排序
       const sortedRegs = [...eventRegistrations].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
       
-      // 計算每個人的狀態
-      const members = sortedRegs.filter(r => r.isMember === 'yes');
-      const nonMembers = sortedRegs.filter(r => r.isMember !== 'yes');
+      // 使用統一的狀態計算函式
+      calculateRegistrationStatuses(sortedRegs, quota);
       
-      let remainingQuota = quota;
-      
-      // 計算社員的狀態
-      members.forEach(reg => {
-        const status = reg.savedStatus || (remainingQuota > 0 ? 'success' : 'waiting');
-        if (status === 'success') {
-          successCount++;
-        }
-        if (!reg.savedStatus && remainingQuota > 0) {
-          remainingQuota--;
-        }
-      });
-      
-      // 計算非社員的狀態
-      nonMembers.forEach(reg => {
-        const status = reg.savedStatus || (remainingQuota > 0 ? 'success' : 'waiting');
-        if (status === 'success') {
-          successCount++;
-        }
-        if (!reg.savedStatus && remainingQuota > 0) {
-          remainingQuota--;
-        }
-      });
+      // 統計成功報名人數
+      successCount = sortedRegs.filter(r => r.status === 'success').length;
     }
     
     // 判斷狀態（根據成功報名人數）
@@ -140,11 +126,14 @@ function loadEventStatistics() {
     const selectedOpen = event.available ? 'selected' : '';
     const selectedClosed = !event.available ? 'selected' : '';
     
+    // 顯示名額上限（若為 0 顯示「無」）
+    const quotaDisplay = (event.quota === '0' || event.quota === 0) ? '無' : event.quota;
+    
     row.innerHTML = `
       <td>${event.title}</td>
       <td>${event.date}</td>
       <td>${registeredCount}</td>
-      <td>${event.quota}</td>
+      <td>${quotaDisplay}</td>
       <td><span class="badge ${statusBadge}">${statusText}</span></td>
       <td>
         <select class="status-select" onchange="updateEventStatus(${event.id}, this.value); event.stopPropagation();" onclick="event.stopPropagation();">
@@ -186,14 +175,68 @@ function selectEvent(eventId) {
   loadRegistrationDetails(selectedEventId);
 }
 
+// 統一的報名狀態計算函式
+function calculateRegistrationStatuses(regs, quota) {
+  if (quota === 0) {
+    // 無名額限制，全部成功
+    regs.forEach(reg => {
+      reg.status = reg.savedStatus || 'success';
+    });
+    return;
+  }
+  
+  // 建立優先順序列表：
+  // 1. 手動設定為「成功」的人（社員優先，再按報名時間）
+  // 2. 沒有手動設定的人（社員優先，再按報名時間）
+  // 3. 手動設定為「候補」的人不進入成功候選
+  // 4. 手動設定為「請假」的人不佔用名額，保持請假狀態
+  
+  // 分類所有報名記錄
+  const manualSuccess = regs.filter(r => r.savedStatus === 'success');
+  const manualLeave = regs.filter(r => r.savedStatus === 'leave');
+  const manualWaiting = regs.filter(r => r.savedStatus === 'waiting');
+  const unassigned = regs.filter(r => !r.savedStatus);
+  
+  // 建立成功候選名單（手動成功 + 未分配），按社員優先排序
+  const successCandidates = [
+    ...manualSuccess.filter(r => r.isMember === 'yes'),
+    ...manualSuccess.filter(r => r.isMember !== 'yes'),
+    ...unassigned.filter(r => r.isMember === 'yes'),
+    ...unassigned.filter(r => r.isMember !== 'yes')
+  ];
+  
+  // 分配名額
+  let remainingQuota = quota;
+  
+  // 處理成功候選名單
+  successCandidates.forEach(reg => {
+    if (remainingQuota > 0) {
+      reg.status = 'success';
+      remainingQuota--;
+    } else {
+      reg.status = 'waiting';
+    }
+  });
+  
+  // 處理請假的人（不佔用名額，保持請假狀態）
+  manualLeave.forEach(reg => {
+    reg.status = 'leave';
+  });
+  
+  // 處理手動設定為候補的人
+  manualWaiting.forEach(reg => {
+    reg.status = 'waiting';
+  });
+}
+
 // 載入報名名單詳情
-function loadRegistrationDetails(eventId = null) {
+async function loadRegistrationDetails(eventId = null) {
   const detailsTableBody = document.getElementById('detailsTableBody');
   if (!detailsTableBody) return;
 
-  // 從 localStorage 讀取所有活動和報名記錄
-  const events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
-  const registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
+  // 從 API 或 localStorage 讀取所有活動和報名記錄
+  const events = await fetchActivities();
+  const registrations = await fetchRegistrations();
 
   // 清空表格
   detailsTableBody.innerHTML = '';
@@ -261,38 +304,8 @@ function loadRegistrationDetails(eventId = null) {
     const regs = eventGroups[evtId];
     const quota = regs[0]?.eventQuota || 0;
     
-    if (quota === 0 || regs.length <= quota) {
-      // 無名額限制或未額滿，全部成功
-      regs.forEach(reg => {
-        reg.status = 'success';
-      });
-    } else {
-      // 額滿，社員優先
-      // 先把社員和非社員分開，各自按報名時間排序
-      const members = regs.filter(r => r.isMember === 'yes');
-      const nonMembers = regs.filter(r => r.isMember !== 'yes');
-      
-      // 社員先錄取
-      let remainingQuota = quota;
-      members.forEach(reg => {
-        if (remainingQuota > 0) {
-          reg.status = 'success';
-          remainingQuota--;
-        } else {
-          reg.status = 'waiting';
-        }
-      });
-      
-      // 剩餘名額給非社員
-      nonMembers.forEach(reg => {
-        if (remainingQuota > 0) {
-          reg.status = 'success';
-          remainingQuota--;
-        } else {
-          reg.status = 'waiting';
-        }
-      });
-    }
+    // 使用統一的狀態計算函式
+    calculateRegistrationStatuses(regs, quota);
   });
 
   // 渲染每筆報名記錄
@@ -316,7 +329,7 @@ function loadRegistrationDetails(eventId = null) {
       <select class="registration-status-select" 
               data-event-id="${reg.eventId}" 
               data-student-id="${reg.studentId}"
-              onchange="updateRegistrationStatus(this)">
+              onchange="handleUpdateRegistrationStatus(this)">
         <option value="success" ${currentStatus === 'success' ? 'selected' : ''}>成功</option>
         <option value="leave" ${currentStatus === 'leave' ? 'selected' : ''}>請假</option>
         <option value="waiting" ${currentStatus === 'waiting' ? 'selected' : ''}>候補</option>
@@ -364,8 +377,8 @@ function updateStatusSelectStyle(select) {
   }
 }
 
-// 更新報名狀態
-function updateRegistrationStatus(selectElement) {
+// 更新報名狀態（處理函數）
+async function handleUpdateRegistrationStatus(selectElement) {
   const eventId = selectElement.dataset.eventId;
   const studentId = selectElement.dataset.studentId;
   const newStatus = selectElement.value;
@@ -373,121 +386,15 @@ function updateRegistrationStatus(selectElement) {
   // 更新下拉選單樣式
   updateStatusSelectStyle(selectElement);
   
-  // 從 localStorage 讀取資料
-  const registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
-  const events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
-  const event = events.find(e => e.id == eventId);
-  const quota = event ? parseInt(event.quota) || 0 : 0;
+  // 呼叫 API 更新狀態（會根據 USE_LOCAL_STORAGE 自動切換）
+  const result = await updateRegistrationStatus(eventId, studentId, newStatus);
   
-  if (registrations[eventId]) {
-    // 找到對應的報名記錄並更新狀態
-    const regIndex = registrations[eventId].findIndex(r => r.studentId === studentId);
-    if (regIndex !== -1) {
-      const oldStatus = registrations[eventId][regIndex].savedStatus || 'success';
-      registrations[eventId][regIndex].savedStatus = newStatus;
-      
-      // 如果從「成功」變成「請假」或「候補」，需要遞補
-      if (oldStatus === 'success' && (newStatus === 'leave' || newStatus === 'waiting')) {
-        // 執行遞補邏輯
-        autoFillVacancy(registrations[eventId], quota);
-      }
-      
-      // 如果從「請假」或「候補」變成「成功」，需要檢查是否超額
-      if ((oldStatus === 'leave' || oldStatus === 'waiting') && newStatus === 'success') {
-        // 檢查是否超額，若超額則將最後一個成功的非社員改為候補
-        handleOverCapacity(registrations[eventId], quota, studentId);
-      }
-      
-      // 儲存到 localStorage
-      localStorage.setItem('geeksoulRegistrations', JSON.stringify(registrations));
-      
-      // 重新載入報名名單和活動統計
-      loadRegistrationDetails(eventId);
-      loadEventStatistics();
-    }
-  }
-}
-
-// 自動遞補邏輯
-function autoFillVacancy(eventRegs, quota) {
-  if (quota === 0) return; // 無名額限制
-  
-  // 按報名時間排序
-  const sortedRegs = [...eventRegs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  
-  // 計算目前成功的人數
-  let successCount = 0;
-  sortedRegs.forEach(reg => {
-    if (reg.savedStatus === 'success') {
-      successCount++;
-    }
-  });
-  
-  // 如果還有名額，找候補的人遞補
-  if (successCount < quota) {
-    const neededCount = quota - successCount;
-    
-    // 找出所有候補的人，社員優先
-    const waitingMembers = sortedRegs.filter(r => r.savedStatus === 'waiting' && r.isMember === 'yes');
-    const waitingNonMembers = sortedRegs.filter(r => r.savedStatus === 'waiting' && r.isMember !== 'yes');
-    const waitingList = [...waitingMembers, ...waitingNonMembers];
-    
-    // 遞補
-    let filled = 0;
-    for (const reg of waitingList) {
-      if (filled >= neededCount) break;
-      
-      // 在原始陣列中找到並更新
-      const originalReg = eventRegs.find(r => r.studentId === reg.studentId);
-      if (originalReg) {
-        originalReg.savedStatus = 'success';
-        filled++;
-      }
-    }
-  }
-}
-
-// 處理超額情況（當手動設為成功導致超額時）
-function handleOverCapacity(eventRegs, quota, excludeStudentId) {
-  if (quota === 0) return; // 無名額限制
-  
-  // 按報名時間排序
-  const sortedRegs = [...eventRegs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  
-  // 計算目前成功的人數
-  let successCount = 0;
-  sortedRegs.forEach(reg => {
-    if (reg.savedStatus === 'success') {
-      successCount++;
-    }
-  });
-  
-  // 如果超額，從最後報名的非社員開始改為候補
-  if (successCount > quota) {
-    const excessCount = successCount - quota;
-    
-    // 找出所有成功的人（排除剛手動設定的那個），從最晚報名的開始
-    const successRegs = sortedRegs
-      .filter(r => r.savedStatus === 'success' && r.studentId !== excludeStudentId)
-      .reverse(); // 最晚報名的在前
-    
-    // 非社員優先被改為候補
-    const successNonMembers = successRegs.filter(r => r.isMember !== 'yes');
-    const successMembers = successRegs.filter(r => r.isMember === 'yes');
-    const candidatesToWaiting = [...successNonMembers, ...successMembers];
-    
-    // 改為候補
-    let removed = 0;
-    for (const reg of candidatesToWaiting) {
-      if (removed >= excessCount) break;
-      
-      // 在原始陣列中找到並更新
-      const originalReg = eventRegs.find(r => r.studentId === reg.studentId);
-      if (originalReg) {
-        originalReg.savedStatus = 'waiting';
-        removed++;
-      }
-    }
+  if (result.success) {
+    // 重新載入報名名單和活動統計
+    await loadRegistrationDetails(eventId);
+    await loadEventStatistics();
+  } else {
+    alert('更新失敗：' + result.message);
   }
 }
 
@@ -584,6 +491,7 @@ function initAdmin() {
   // 綁定日期篩選事件
   const yearFilter = document.getElementById('yearFilter');
   const monthFilter = document.getElementById('monthFilter');
+  const ongoingFilter = document.getElementById('ongoingFilter');
   
   if (yearFilter && monthFilter) {
     // 初始狀態：若年份為「全部」，禁用月份選單
@@ -604,6 +512,42 @@ function initAdmin() {
     });
     
     monthFilter.addEventListener('change', function() {
+      loadEventStatistics();
+    });
+  }
+  
+  // 綁定持續進行 checkbox
+  if (ongoingFilter) {
+    // 儲存原始的年份和月份值
+    let savedYear = '2026';
+    let savedMonth = '';
+    
+    ongoingFilter.addEventListener('change', function() {
+      // 勾選持續進行時，設定選單為特殊值
+      if (this.checked) {
+        // 儲存當前的篩選值
+        savedYear = yearFilter ? yearFilter.value : '';
+        savedMonth = monthFilter ? monthFilter.value : '';
+        
+        if (yearFilter) {
+          yearFilter.disabled = true;
+          yearFilter.value = '__ongoing__';
+        }
+        if (monthFilter) {
+          monthFilter.disabled = true;
+          monthFilter.value = '__ongoing__';
+        }
+      } else {
+        // 恢復原本的篩選值
+        if (yearFilter) {
+          yearFilter.disabled = false;
+          yearFilter.value = savedYear === '__ongoing__' ? '2026' : savedYear;
+        }
+        if (monthFilter) {
+          monthFilter.disabled = false;
+          monthFilter.value = savedMonth === '__ongoing__' ? '' : savedMonth;
+        }
+      }
       loadEventStatistics();
     });
   }

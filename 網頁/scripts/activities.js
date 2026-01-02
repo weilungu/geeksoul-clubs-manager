@@ -3,15 +3,27 @@
  * 活動管理模組：負責活動的載入、顯示與圖片處理
  */
 
-// 從 localStorage 載入動態活動
-function loadDynamicActivities() {
+// 從 API 或 localStorage 載入動態活動
+async function loadDynamicActivities() {
   const availableContainer = document.getElementById('availableActivities');
   if (!availableContainer) return;
 
-  const events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
+  // 從 API 取得活動資料（會根據 USE_LOCAL_STORAGE 自動切換）
+  const events = await fetchActivities();
+  const now = new Date();
   
-  // 過濾掉已截止的活動（available 為 false）
-  const availableEvents = events.filter(event => event.available !== false);
+  // 過濾掉已截止的活動（available 為 false）和超過截止時間的活動
+  const availableEvents = events.filter(event => {
+    if (event.available === false) return false;
+    
+    // 檢查是否超過截止時間
+    if (event.deadline) {
+      const deadline = new Date(event.deadline);
+      if (now > deadline) return false;
+    }
+    
+    return true;
+  });
   
   // 如果沒有可報名的活動，顯示提示訊息
   if (availableEvents.length === 0) {

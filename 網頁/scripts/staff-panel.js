@@ -6,6 +6,80 @@
 // 當前編輯模式：null = 新增模式，數字 = 編輯模式（存放 eventId）
 let currentEditingEventId = null;
 
+// 格式化日期時間範圍
+function formatDateTimeRange(startTime, endTime) {
+  if (!startTime || !endTime) return '';
+  
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  
+  const year = start.getFullYear();
+  const month = start.getMonth() + 1;
+  const day = start.getDate();
+  const startHour = String(start.getHours()).padStart(2, '0');
+  const startMin = String(start.getMinutes()).padStart(2, '0');
+  const endHour = String(end.getHours()).padStart(2, '0');
+  const endMin = String(end.getMinutes()).padStart(2, '0');
+  
+  return `${year}年${month}月${day}日 ${startHour}:${startMin} - ${endHour}:${endMin}`;
+}
+
+// 切換日期時間輸入框的顯示/隱藏
+function toggleDateTimeInputs(hide) {
+  const startTimeGroup = document.getElementById('eventStartTime').closest('.form-group');
+  const endTimeGroup = document.getElementById('eventEndTime').closest('.form-group');
+  const deadlineGroup = document.getElementById('eventDeadline').closest('.form-group');
+  
+  if (hide) {
+    // 隱藏欄位
+    startTimeGroup.style.display = 'none';
+    endTimeGroup.style.display = 'none';
+    deadlineGroup.style.display = 'none';
+    
+    // 移除 required 屬性並清空值
+    document.getElementById('eventStartTime').required = false;
+    document.getElementById('eventEndTime').required = false;
+    document.getElementById('eventDeadline').required = false;
+    document.getElementById('eventStartTime').value = '';
+    document.getElementById('eventEndTime').value = '';
+    document.getElementById('eventDeadline').value = '';
+  } else {
+    // 顯示欄位
+    startTimeGroup.style.display = 'block';
+    endTimeGroup.style.display = 'block';
+    deadlineGroup.style.display = 'block';
+    
+    // 恢復 required 屬性
+    document.getElementById('eventStartTime').required = true;
+    document.getElementById('eventEndTime').required = true;
+    document.getElementById('eventDeadline').required = true;
+  }
+}
+
+// 切換名額上限輸入框的顯示/隱藏
+function toggleQuotaInput(hide) {
+  const quotaGroup = document.getElementById('eventQuota').closest('.form-group');
+  const quotaInput = document.getElementById('eventQuota');
+  
+  if (hide) {
+    // 隱藏欄位
+    quotaGroup.style.display = 'none';
+    
+    // 移除 required 和 min 屬性並設為 0
+    quotaInput.required = false;
+    quotaInput.removeAttribute('min');
+    quotaInput.value = '0';
+  } else {
+    // 顯示欄位
+    quotaGroup.style.display = 'block';
+    
+    // 恢復 required 和 min 屬性並清空值
+    quotaInput.required = true;
+    quotaInput.setAttribute('min', '1');
+    quotaInput.value = '';
+  }
+}
+
 // 顯示成功通知
 function showSuccessNotification(message) {
   const notification = document.getElementById('successNotification');
@@ -39,6 +113,14 @@ function openCreateEventModal() {
   currentEditingEventId = null;
   updateModalForMode();
   
+  // 重置 checkbox 和日期輸入框
+  document.getElementById('noDeadline').checked = false;
+  toggleDateTimeInputs(false);
+  
+  // 重置名額上限 checkbox
+  document.getElementById('noQuotaLimit').checked = false;
+  toggleQuotaInput(false);
+  
   openModalWithFade(createEventModal);
   document.body.classList.add('modal-open');
 }
@@ -63,11 +145,29 @@ function openEditEventModal(eventId) {
   
   // 填入現有資料
   document.getElementById('eventName').value = event.title || '';
-  document.getElementById('eventDate').value = event.date || '';
+  
+  // 檢查是否為無截止時間
+  const noDeadline = !event.startTime && !event.endTime && !event.deadline;
+  document.getElementById('noDeadline').checked = noDeadline;
+  
+  document.getElementById('eventStartTime').value = event.startTime || '';
+  document.getElementById('eventEndTime').value = event.endTime || '';
+  document.getElementById('eventDeadline').value = event.deadline || '';
+  
+  // 根據 checkbox 狀態設定 disable
+  toggleDateTimeInputs(noDeadline);
+  
   document.getElementById('eventLocation').value = event.location || '';
   document.getElementById('eventSpeaker').value = event.speaker || '';
   document.getElementById('eventDescription').value = event.description || '';
-  document.getElementById('eventQuota').value = event.quota || '';
+  
+  // 檢查是否為無名額上限（quota 為 0 表示無限制）
+  const noQuotaLimit = event.quota === '0' || event.quota === 0;
+  document.getElementById('noQuotaLimit').checked = noQuotaLimit;
+  document.getElementById('eventQuota').value = noQuotaLimit ? '' : (event.quota || '');
+  
+  // 根據 checkbox 狀態設定顯示
+  toggleQuotaInput(noQuotaLimit);
   
   // 從 poster URL 還原 Google Drive ID
   if (event.poster) {
@@ -126,12 +226,15 @@ function closeCreateEventModal() {
 }
 
 // 處理新增/編輯活動表單提交
-function handleCreateEventSubmit(e) {
+async function handleCreateEventSubmit(e) {
   e.preventDefault();
   
   const createEventForm = document.getElementById('createEventForm');
   
-  // 檢查表單驗證
+  // 檢查是否勾選無截止時間
+  const noDeadline = document.getElementById('noDeadline').checked;
+  
+  // 始終驗證表單（日期欄位已根據 checkbox 設置 required 屬性）
   if (!createEventForm.checkValidity()) {
     createEventForm.reportValidity();
     return;
@@ -139,13 +242,22 @@ function handleCreateEventSubmit(e) {
 
   // 收集表單資料
   const eventName = document.getElementById('eventName').value.trim();
-  const eventDate = document.getElementById('eventDate').value.trim();
+  const eventStartTime = noDeadline ? '' : document.getElementById('eventStartTime').value;
+  const eventEndTime = noDeadline ? '' : document.getElementById('eventEndTime').value;
+  const eventDeadline = noDeadline ? '' : document.getElementById('eventDeadline').value;
   const eventLocation = document.getElementById('eventLocation').value.trim();
   const eventSpeaker = document.getElementById('eventSpeaker').value.trim();
   const eventDescription = document.getElementById('eventDescription').value.trim();
-  const eventQuota = document.getElementById('eventQuota').value;
+  
+  // 處理名額上限
+  const noQuotaLimit = document.getElementById('noQuotaLimit').checked;
+  const eventQuota = noQuotaLimit ? '0' : document.getElementById('eventQuota').value;
+  
   const eventPosterInput = document.getElementById('eventPoster').value.trim();
   const eventStatus = document.getElementById('eventStatus').value;
+  
+  // 格式化日期時間顯示
+  const formattedDate = noDeadline ? '持續進行中' : formatDateTimeRange(eventStartTime, eventEndTime);
 
   // 處理 Google Drive ID
   let eventPoster = '';
@@ -159,15 +271,14 @@ function handleCreateEventSubmit(e) {
     // 如果格式錯誤，eventPoster 保持為空字串，將使用 fallbackBg
   }
 
-  // 從 localStorage 讀取現有活動
-  let events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
-
   if (currentEditingEventId === null) {
     // 新增模式：建立新活動物件
-    const newEvent = {
-      id: Date.now(),
+    const newEventData = {
       title: eventName,
-      date: eventDate,
+      date: formattedDate,
+      startTime: eventStartTime,
+      endTime: eventEndTime,
+      deadline: eventDeadline,
       location: eventLocation,
       speaker: eventSpeaker,
       quota: eventQuota,
@@ -177,45 +288,49 @@ function handleCreateEventSubmit(e) {
       available: eventStatus === '開放報名'
     };
     
-    events.push(newEvent);
-    localStorage.setItem('geeksoulEvents', JSON.stringify(events));
+    // 呼叫 API 建立活動（會根據 USE_LOCAL_STORAGE 自動切換）
+    const result = await createActivityAPI(newEventData);
     
-    // 關閉 Modal 並顯示成功訊息
-    closeCreateEventModal();
-    loadCreatedEvents();
-    showSuccessNotification(`活動「${eventName}」已成功建立！請前往首頁查看新增的活動。`);
-    return;
+    if (result.success) {
+      // 關閉 Modal 並顯示成功訊息
+      closeCreateEventModal();
+      await loadCreatedEvents();
+      showSuccessNotification(`活動「${eventName}」已成功建立！請前往首頁查看新增的活動。`);
+    } else {
+      alert('建立失敗：' + result.message);
+    }
   } else {
     // 編輯模式：更新現有活動
-    const eventIndex = events.findIndex(e => e.id === currentEditingEventId);
-    
-    if (eventIndex === -1) {
-      alert('找不到該活動，無法更新。');
-      return;
-    }
-    
-    // 保留原有的 id 和 fallbackBg
-    events[eventIndex] = {
-      ...events[eventIndex],
+    const updateEventData = {
+      id: currentEditingEventId,
       title: eventName,
-      date: eventDate,
+      date: formattedDate,
+      startTime: eventStartTime,
+      endTime: eventEndTime,
+      deadline: eventDeadline,
       location: eventLocation,
       speaker: eventSpeaker,
       quota: eventQuota,
       description: eventDescription || '',
       poster: eventPoster,
+      fallbackBg: 'linear-gradient(135deg, #B71C1C, #F57C00)',
       available: eventStatus === '開放報名'
     };
     
-    localStorage.setItem('geeksoulEvents', JSON.stringify(events));
+    // 呼叫 API 更新活動（會根據 USE_LOCAL_STORAGE 自動切換）
+    const result = await updateActivityAPI(updateEventData);
     
-    // 重新計算該活動的報名狀態
-    recalculateRegistrationStatus(currentEditingEventId, parseInt(eventQuota) || 0);
-    
-    // 關閉 Modal 並顯示成功訊息
-    closeCreateEventModal();
-    loadCreatedEvents();
-    showSuccessNotification(`活動「${eventName}」已成功更新！`);
+    if (result.success) {
+      // 重新計算該活動的報名狀態
+      recalculateRegistrationStatus(currentEditingEventId, parseInt(eventQuota) || 0);
+      
+      // 關閉 Modal 並顯示成功訊息
+      closeCreateEventModal();
+      await loadCreatedEvents();
+      showSuccessNotification(`活動「${eventName}」已成功更新！`);
+    } else {
+      alert('更新失敗：' + result.message);
+    }
   }
 }
 
@@ -292,18 +407,18 @@ function recalculateRegistrationStatus(eventId, newQuota) {
 }
 
 // 載入已建立的活動
-function loadCreatedEvents() {
+async function loadCreatedEvents() {
   const eventsTableBody = document.querySelector('table tbody');
   if (!eventsTableBody) return;
 
-  // 從 localStorage 讀取活動
-  const allEvents = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
+  // 從 API 或 localStorage 讀取活動（會根據 USE_LOCAL_STORAGE 自動切換）
+  const allEvents = await fetchActivities();
   
   // 過濾掉已截止的活動（available 為 false）
   const events = allEvents.filter(event => event.available !== false);
   
-  // 從 localStorage 讀取所有報名記錄
-  const registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
+  // 從 API 或 localStorage 讀取所有報名記錄
+  const registrations = await fetchRegistrations();
 
   // 清空表格（移除示例數據）
   eventsTableBody.innerHTML = '';
@@ -330,7 +445,11 @@ function loadCreatedEvents() {
     let statusBadge = '';
     let statusText = '';
     
-    if (event.available) {
+    // 檢查是否無截止時間（持續進行）
+    if (!event.deadline || (event.startTime === '' && event.endTime === '' && event.deadline === '')) {
+      statusBadge = 'info';
+      statusText = '持續進行';
+    } else if (event.available) {
       statusBadge = 'success';
       statusText = '開放報名';
     } else {
@@ -338,17 +457,20 @@ function loadCreatedEvents() {
       statusText = '已截止';
     }
     
-    // 如果額滿，顯示額滿狀態
-    if (registeredCount >= event.quota) {
+    // 如果有名額限制且額滿，顯示額滿狀態
+    if (event.quota && event.quota !== '0' && event.quota !== 0 && registeredCount >= event.quota) {
       statusBadge = 'warning';
       statusText = '已額滿';
     }
+
+    // 顯示名額（若為 0 或無限制，顯示「無」）
+    const quotaDisplay = (event.quota === '0' || event.quota === 0) ? '無' : event.quota;
 
     const row = document.createElement('tr');
     row.innerHTML = `
       <td><strong>${event.title}</strong></td>
       <td><span class="badge ${statusBadge}">${statusText}</span></td>
-      <td>${registeredCount} / ${event.quota}</td>
+      <td>${registeredCount} / ${quotaDisplay}</td>
       <td>
         <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;" onclick="editEvent(${event.id})">編輯</button>
         <button class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem; margin-left: 0.5rem;" onclick="viewRegistrations(${event.id})">查看名單</button>
@@ -510,6 +632,8 @@ function initStaffPanel() {
   const modalClose = createEventModal.querySelector('.modal-close');
   const cancelCreateEventBtn = document.getElementById('cancelCreateEventBtn');
   const createEventForm = document.getElementById('createEventForm');
+  const noDeadlineCheckbox = document.getElementById('noDeadline');
+  const noQuotaLimitCheckbox = document.getElementById('noQuotaLimit');
 
   // 綁定關閉按鈕
   if (modalClose) modalClose.addEventListener('click', closeCreateEventModal);
@@ -518,6 +642,20 @@ function initStaffPanel() {
   // 綁定表單提交
   if (createEventForm) {
     createEventForm.addEventListener('submit', handleCreateEventSubmit);
+  }
+  
+  // 綁定「無截止時間」checkbox
+  if (noDeadlineCheckbox) {
+    noDeadlineCheckbox.addEventListener('change', function() {
+      toggleDateTimeInputs(this.checked);
+    });
+  }
+  
+  // 綁定「無名額上限」checkbox
+  if (noQuotaLimitCheckbox) {
+    noQuotaLimitCheckbox.addEventListener('change', function() {
+      toggleQuotaInput(this.checked);
+    });
   }
 
   // 將函式暴露到全域

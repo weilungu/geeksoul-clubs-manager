@@ -97,9 +97,28 @@
             <input type="text" id="eventName" placeholder="例：極客魂新生入門講座" required>
           </div>
 
+          <div class="form-group" style="background-color: #f5f5f5; padding: 1rem; border-radius: 8px; border-left: 4px solid var(--color-primary);">
+            <label style="display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--color-text-main);">
+              <input type="checkbox" id="noDeadline" style="width: 18px; height: 18px; margin-right: 0.75rem; cursor: pointer; accent-color: var(--color-primary);">
+              無截止時間（活動持續開放報名）
+            </label>
+            <p class="form-hint" style="margin: 0.5rem 0 0 2rem; font-size: 0.85rem;">勾選此選項後，活動將不受時間限制，永久顯示在首頁</p>
+          </div>
+
           <div class="form-group">
-            <label>活動日期時間 <span class="required">*</span></label>
-            <input type="text" id="eventDate" placeholder="例：2025年1月15日 19:00 - 21:00" required>
+            <label>活動開始時間 <span class="required">*</span></label>
+            <input type="datetime-local" id="eventStartTime" required>
+          </div>
+
+          <div class="form-group">
+            <label>活動結束時間 <span class="required">*</span></label>
+            <input type="datetime-local" id="eventEndTime" required>
+          </div>
+
+          <div class="form-group">
+            <label>報名截止時間 <span class="required">*</span></label>
+            <input type="datetime-local" id="eventDeadline" required>
+            <p class="form-hint">過了截止時間，活動卡片將自動從首頁移除</p>
           </div>
 
           <div class="form-group">
@@ -120,6 +139,14 @@
           <div class="form-group">
             <label>名額上限 <span class="required">*</span></label>
             <input type="number" id="eventQuota" placeholder="50" min="1" required>
+          </div>
+          
+          <div class="form-group" style="background-color: #f5f5f5; padding: 1rem; border-radius: 8px; border-left: 4px solid var(--color-secondary);">
+            <label style="display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--color-text-main);">
+              <input type="checkbox" id="noQuotaLimit" style="width: 18px; height: 18px; margin-right: 0.75rem; cursor: pointer; accent-color: var(--color-secondary);">
+              無名額上限（不限制報名人數）
+            </label>
+            <p class="form-hint" style="margin: 0.5rem 0 0 2rem; font-size: 0.85rem;">勾選此選項後，活動將不限制報名人數</p>
           </div>
 
           <div class="form-group">
@@ -146,6 +173,7 @@
   </div>
 
   <!-- JavaScript Modules -->
+  <script src="../scripts/api.js"></script>
   <script src="../scripts/jQuery.js"></script>
   <script src="../scripts/utils.js"></script>
   <script src="../scripts/staff-panel.js"></script>
