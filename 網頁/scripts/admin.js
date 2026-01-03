@@ -398,27 +398,51 @@ async function handleUpdateRegistrationStatus(selectElement) {
   }
 }
 
-// 匯出 CSV
+// 匯出 Excel
 function exportCSV() {
-  const activitySelect = document.getElementById('activitySelect');
-  const selectedEventId = activitySelect ? activitySelect.value : null;
+  // 取得當前選擇的活動（如果有）
+  const selectedEvent = selectedEventId;
   
   const events = JSON.parse(localStorage.getItem('geeksoulEvents') || '[]');
   const registrations = JSON.parse(localStorage.getItem('geeksoulRegistrations') || '{}');
   
   // 收集要匯出的報名記錄
   let allRegistrations = [];
+  let eventTitle = '所有活動';
   
-  if (selectedEventId) {
-    const eventRegs = registrations[selectedEventId] || [];
-    const event = events.find(e => e.id == selectedEventId);
-    allRegistrations = eventRegs.map(reg => ({ ...reg, eventTitle: event ? event.title : '' }));
+  if (selectedEvent) {
+    const eventRegs = registrations[selectedEvent] || [];
+    const event = events.find(e => e.id == selectedEvent);
+    eventTitle = event ? event.title : '未知活動';
+    const quota = event ? parseInt(event.quota) || 0 : 0;
+    
+    // 計算報名狀態
+    const sortedRegs = [...eventRegs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    calculateRegistrationStatuses(sortedRegs, quota);
+    
+    allRegistrations = sortedRegs.map((reg, index) => ({ 
+      ...reg, 
+      eventTitle: eventTitle,
+      order: index + 1 
+    }));
   } else {
+    // 匯出所有活動
     Object.keys(registrations).forEach(id => {
       const eventRegs = registrations[id] || [];
       const event = events.find(e => e.id == id);
-      eventRegs.forEach(reg => {
-        allRegistrations.push({ ...reg, eventTitle: event ? event.title : '' });
+      const quota = event ? parseInt(event.quota) || 0 : 0;
+      const title = event ? event.title : '未知活動';
+      
+      // 計算報名狀態
+      const sortedRegs = [...eventRegs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      calculateRegistrationStatuses(sortedRegs, quota);
+      
+      sortedRegs.forEach((reg, index) => {
+        allRegistrations.push({ 
+          ...reg, 
+          eventTitle: title,
+          order: index + 1 
+        });
       });
     });
   }
@@ -428,32 +452,65 @@ function exportCSV() {
     return;
   }
   
-  // 生成 CSV 內容
-  const headers = ['序號', '活動名稱', '姓名', '學號', '系所', '社員身分', 'Email', '報名時間'];
-  const rows = allRegistrations.map((reg, index) => {
+  // 準備 Excel 資料
+  const excelData = allRegistrations.map(reg => {
     const timestamp = new Date(reg.timestamp);
-    const formattedTime = timestamp.toLocaleString('zh-TW');
-    const memberStatus = reg.isMember === 'yes' ? '社員' : '非社員';
-    return [
-      index + 1,
-      reg.eventTitle,
-      reg.name,
-      reg.studentId,
-      reg.department,
-      memberStatus,
-      reg.email,
-      formattedTime
-    ].map(cell => `"${cell}"`).join(',');
+    const formattedTime = timestamp.toLocaleString('zh-TW', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    const memberStatus = reg.isMember === 'yes' ? '是' : '否';
+    const status = reg.savedStatus || reg.status;
+    const statusText = status === 'success' ? '成功' : 
+                       status === 'waiting' ? '候補' : 
+                       status === 'leave' ? '請假' : status;
+    
+    return {
+      '序號': String(reg.order).padStart(3, '0'),
+      '活動名稱': reg.eventTitle,
+      '系級': reg.department,
+      '姓名': reg.name,
+      '學號': reg.studentId,
+      '是否社員': memberStatus,
+      'Line暱稱': reg.lineName || '',
+      'Email': reg.email,
+      '報名時間': formattedTime,
+      '報名狀態': statusText
+    };
   });
   
-  const csvContent = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
+  // 創建工作簿和工作表
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(excelData);
   
-  // 下載 CSV
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `報名名單_${new Date().toISOString().slice(0, 10)}.csv`;
-  link.click();
+  // 設定欄位寬度
+  const colWidths = [
+    { wch: 6 },  // 序號
+    { wch: 30 }, // 活動名稱
+    { wch: 15 }, // 系級
+    { wch: 10 }, // 姓名
+    { wch: 12 }, // 學號
+    { wch: 10 }, // 是否社員
+    { wch: 15 }, // Line暱稱
+    { wch: 25 }, // Email
+    { wch: 20 }, // 報名時間
+    { wch: 10 }  // 報名狀態
+  ];
+  ws['!cols'] = colWidths;
+  
+  // 添加工作表到工作簿
+  XLSX.utils.book_append_sheet(wb, ws, '報名名單');
+  
+  // 生成檔案名稱
+  const date = new Date().toISOString().slice(0, 10);
+  const filename = `報名名單_${eventTitle}_${date}.xlsx`;
+  
+  // 下載 Excel 檔案
+  XLSX.writeFile(wb, filename);
 }
 
 // 列印功能

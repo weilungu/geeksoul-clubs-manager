@@ -51,8 +51,18 @@ async function loadDynamicActivities() {
     activityCard.dataset.poster = event.poster;
     activityCard.dataset.fallbackBg = event.fallbackBg;
 
+    // 建立圖片容器內容
+    let imageContent = '';
+    if (event.poster) {
+      // 有海報圖片，使用 img 標籤
+      imageContent = `<img src="${event.poster}" alt="${event.title} 海報">`;
+    } else if (event.fallbackBg) {
+      // 無海報圖片，使用漸層背景
+      imageContent = ''; // 將通過 style 設定背景
+    }
+
     activityCard.innerHTML = `
-      <div class="activity-image"></div>
+      <div class="activity-image">${imageContent}</div>
       <div class="activity-content">
         <h3>${event.title}</h3>
         <div class="activity-info">
@@ -63,11 +73,18 @@ async function loadDynamicActivities() {
       </div>
     `;
 
+    // 如果沒有海報，設定漸層背景
+    if (!event.poster && event.fallbackBg) {
+      const imageContainer = activityCard.querySelector('.activity-image');
+      imageContainer.style.background = event.fallbackBg;
+    }
+
     availableContainer.appendChild(activityCard);
   });
 }
 
 // 根據 data-poster 和 data-fallback-bg 自動設定卡片圖片
+// 注意：此函數已不再需要，因為圖片在 loadDynamicActivities() 中已直接處理
 function setupActivityImages() {
   const allActivityItems = document.querySelectorAll('.activity-item');
   allActivityItems.forEach((card) => {
@@ -76,12 +93,15 @@ function setupActivityImages() {
     const imageContainer = card.querySelector('.activity-image');
     const title = card.dataset.title || '活動';
 
-    if (poster && imageContainer) {
-      // 有海報圖片，使用 img 標籤
-      imageContainer.innerHTML = `<img src="${poster}" alt="${title} 海報">`;
-    } else if (fallbackBg && imageContainer) {
-      // 無海報圖片，使用漸層背景
-      imageContainer.style.background = fallbackBg;
+    // 只處理尚未設定圖片的卡片
+    if (imageContainer && imageContainer.innerHTML.trim() === '') {
+      if (poster) {
+        // 有海報圖片，使用 img 標籤
+        imageContainer.innerHTML = `<img src="${poster}" alt="${title} 海報">`;
+      } else if (fallbackBg) {
+        // 無海報圖片，使用漸層背景
+        imageContainer.style.background = fallbackBg;
+      }
     }
   });
 }
@@ -89,7 +109,7 @@ function setupActivityImages() {
 // 初始化活動模組
 function initActivities() {
   loadDynamicActivities();
-  setupActivityImages();
+  // setupActivityImages() 已整合到 loadDynamicActivities() 中，不再需要單獨調用
 }
 
 // 如果是在 DOMContentLoaded 中執行
