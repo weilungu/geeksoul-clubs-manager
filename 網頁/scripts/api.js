@@ -108,12 +108,15 @@ async function submitRegistration(registrationData) {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-          action: 'sendConfirmation',
+          action: 'sendEmail',
           data: JSON.stringify({
             email: registrationData.email,
             name: registrationData.name,
             activityTitle: registrationData.eventTitle,
-            activityDate: registrationData.activityDate || '待定'
+            activityDate: registrationData.activityDate || '待定',
+            activityLocation: registrationData.activityLocation || '待定',
+            studentId: registrationData.studentId || '',
+            isMember: registrationData.isMember || '未提供'
           })
         })
       });

@@ -179,6 +179,7 @@ function handleRegistrationSubmit() {
       eventId: currentActivity.id,
       eventTitle: currentActivity.title,
       activityDate: currentActivity.date,
+      activityLocation: currentActivity.location || '待定',
       department: department,
       name: name,
       studentId: studentId,
