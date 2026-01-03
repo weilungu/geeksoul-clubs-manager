@@ -99,6 +99,40 @@ async function submitRegistration(registrationData) {
   registrations[registrationData.eventId].push(newRegistration);
   localStorage.setItem('geeksoulRegistrations', JSON.stringify(registrations));
   
+  // 呼叫 Google Apps Script 寄送確認郵件
+  if (window.gasDeploymentUrl) {
+    try {
+      console.log('📧 準備寄送郵件至:', registrationData.email);
+      
+      const gasResponse = await fetch(window.gasDeploymentUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          action: 'sendConfirmation',
+          data: JSON.stringify({
+            email: registrationData.email,
+            name: registrationData.name,
+            activityTitle: registrationData.eventTitle,
+            activityDate: registrationData.activityDate || '待定'
+          })
+        })
+      });
+      
+      const result = await gasResponse.json();
+      console.log('📧 GAS 回應:', result);
+      
+      if (!result.success) {
+        console.warn('⚠️ 郵件寄送失敗:', result.message);
+      } else {
+        console.log('✅ 郵件已寄送');
+      }
+    } catch (error) {
+      console.error('❌ GAS 調用失敗:', error);
+    }
+  } else {
+    console.warn('⚠️ 未設定 gasDeploymentUrl，無法寄送郵件');
+  }
+  
   return { success: true, message: '報名成功' };
 }
 

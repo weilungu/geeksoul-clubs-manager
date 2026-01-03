@@ -178,6 +178,7 @@ function handleRegistrationSubmit() {
     const registrationData = {
       eventId: currentActivity.id,
       eventTitle: currentActivity.title,
+      activityDate: currentActivity.date,
       department: department,
       name: name,
       studentId: studentId,
